@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Flask & OpenLayers</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.9.0/css/ol.css" type="text/css">
+        <style>
+            #map {
+                width: 80%;
+                height: 80%;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+        </style>
+        <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.9.0/build/ol.js" type="text/javascript"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://unpkg.com/@turf/turf"></script>  <!-- Turf.js 라이브러리 추가 -->
+    </head>
+<body>
+    <div id="map" class="map" style=""></div>
+    <div id="marker1" style="width: 20px; height: 20px; background-color: red;"></div>
+    <script>
+
+var map = new ol.Map({
+    target: 'map',
+    layers: [
+    new ol.layer.Tile({
+      source: new ol.source.OSM()
+    }),
+  ],
+    view: new ol.View({
+        center: ol.proj.fromLonLat([127.0389225, 37.5021522]), // 서울의 위도와 경도
+        zoom: 19
+    })
+});
+
+var lineCoordinates = [[14141951.2206986, 4509409.64343401], [14142103.497590885, 4509465.4782944685]];
+var lineCoordinates2 = [[14142003.135801408, 4509282.433336578], [14142156.607022261, 4509344.239839918]];
+
+
+// Create a line feature
+var lineFeature = new ol.Feature({
+  geometry: new ol.geom.LineString(lineCoordinates)
+});
+var lineFeature2 = new ol.Feature({
+  geometry: new ol.geom.LineString(lineCoordinates2)
+});
+// Create a style for the line
+var lineStyle = new ol.style.Style({
+  stroke: new ol.style.Stroke({
+      color: 'blue',
+      width: 10
+  })
+});
+
+// Apply the style to the line feature
+lineFeature.setStyle(lineStyle);
+lineFeature2.setStyle(lineStyle);
+
+// Add the line feature to a layer
+var lineLayer = new ol.layer.Vector({
+  source: new ol.source.Vector({
+      features: [lineFeature,lineFeature2]
+  })
+});
+
+// Add the layer to the map
+map.addLayer(lineLayer);
+
+var marker1 = new ol.Overlay({
+    position: ol.proj.fromLonLat([127.0396619724524, 37.502340317490436]),  // 첫 번째 마커 좌표
+    element: document.getElementById('marker1')
+  });
+map.addOverlay(marker1);
+
+
+// 가정: lineFeature, lineFeature2와 marker1는 이미 정의된 객체입니다.
+
+// 라인 Feature들의 배열
+var lines = [lineFeature, lineFeature2];
+
+// 거리를 계산하고 저장할 객체
+var distances = {};
+
+// 각 라인과 마커 사이의 거리를 계산합니다.
+for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var lineCoordinates = line.getGeometry().getCoordinates();
+
+    var shortestDistance = Infinity;
+
+    // 라인의 각 좌표와 마커 사이의 거리를 계산합니다.
+    for (var j = 0; j < lineCoordinates.length; j++) {
+        var coord = lineCoordinates[j];
+        var distance = ol.sphere.getDistance(coord, marker1.getPosition());
+
+        if (distance < shortestDistance) {
+            shortestDistance = distance;
+        }
+    }
+
+    distances[i] = shortestDistance;
+}
+
+// 가장 짧은 거리를 찾습니다.
+var shortestDistance = Infinity;
+var closestLine;
+
+for (var i in distances) {
+    if (distances[i] < shortestDistance) {
+        shortestDistance = distances[i];
+        closestLine = lines[i];
+    }
+}
+
+// 가장 가까운 라인을 반환합니다.
+console.log(closestLine);
+
+// 라인 세그먼트 위의 가장 가까운 점을 찾는 함수
+function closestPointOnLineSegment(point, lineStart, lineEnd) {
+  // 두 점 사이의 거리를 계산하는 함수
+  function distance(point1, point2) {
+    var dx = point2[0] - point1[0];
+    var dy = point2[1] - point1[1];
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  var lineLength = distance(lineStart, lineEnd);
+  if (lineLength == 0) return lineStart;
+  var t = ((point[0] - lineStart[0]) * (lineEnd[0] - lineStart[0]) + (point[1] - lineStart[1]) * (lineEnd[1] - lineStart[1])) / (lineLength * lineLength);
+  t = Math.max(0, Math.min(1, t));
+  return [lineStart[0] + t * (lineEnd[0] - lineStart[0]), lineStart[1] + t * (lineEnd[1] - lineStart[1])];
+}
+
+// 마커 위치에서 가장 가까운 라인 세그먼트와의 거리를 찾는 코드
+var closestPoint;
+var shortestDistance = Infinity;
+
+for (var i = 0; i < closestLine.getGeometry().getCoordinates().length - 1; i++) {
+  var start = closestLine.getGeometry().getCoordinates()[i];
+  var end = closestLine.getGeometry().getCoordinates()[i + 1];
+  var point = closestPointOnLineSegment(marker1.getPosition(), start, end);
+  var distance = ol.sphere.getDistance(point, marker1.getPosition());
+  if (distance < shortestDistance) {
+      shortestDistance = distance;
+      closestPoint = point;
+  }
+}
+
+// 가장 가까운 점을 출력합니다.
+
+marker1.setPosition(closestPoint);
+console.log(closestPoint);
+
+
+map.on('click', function(evt) {
+  // 클릭한 위치의 좌표를 가져옵니다.
+  var coordinate = evt.coordinate;
+  console.log(coordinate)
+});
+    </script>
+</body>
+</html>

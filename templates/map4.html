@@ -54,53 +54,175 @@ var lineStyle = new ol.style.Style({
   })
 });
 
+var lineCheckStyle = new ol.style.Style({
+  stroke: new ol.style.Stroke({
+      color: 'red',
+      width: 10
+  })
+});
+
 // Apply the style to the line feature
 lineFeature.setStyle(lineStyle);
 lineFeature2.setStyle(lineStyle);
 
+var lineSource = new ol.source.Vector({
+  features: [lineFeature,lineFeature2]
+})
+
 // Add the line feature to a layer
 var lineLayer = new ol.layer.Vector({
-  source: new ol.source.Vector({
-      features: [lineFeature,lineFeature2]
-  })
+  source: lineSource
 });
 
 // Add the layer to the map
 map.addLayer(lineLayer);
 
+
 var marker1 = new ol.Overlay({
     position: ol.proj.fromLonLat([127.0396619724524, 37.502340317490436]),  // 첫 번째 마커 좌표
-    element: document.getElementById('marker1')
+    element: document.getElementById('marker1'),
+    offset : [-10,-10]
   });
 map.addOverlay(marker1);
 
 
-// 가정: lineFeature, lineFeature2와 marker1는 이미 정의된 객체입니다.
+
+function findIntersectingLines(circle, vectorSource) {
+  var intersectingLines = [];
+  
+  // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  var circleExtent = circle.getExtent();
+
+  // 영역을 사각형 형태로 변환합니다.
+  var extentPolygon = new ol.geom.Polygon.fromExtent(circleExtent);
+
+  // 사각형 피처를 생성하고 스타일을 설정합니다. (예: 녹색으로 채우기)
+  var extentFeature = new ol.Feature(extentPolygon);
+  extentFeature.setStyle(new ol.style.Style({
+      fill: new ol.style.Fill({
+          color: 'rgba(0, 255, 0, 0.3)' // 녹색, 반투명도 0.3
+      }),
+      stroke: new ol.style.Stroke({
+          color: 'green',
+          width: 1
+      })
+  }));
+
+  // 벡터 레이어에 사각형 피처를 추가합니다.
+  var extentLayer = new ol.layer.Vector({
+      source: new ol.source.Vector({
+          features: [extentFeature]
+      })
+  });
+  map.addLayer(extentLayer);
+
+
+
+  // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  vectorSource.forEachFeature(function (feature) {
+      var geometry = feature.getGeometry();
+        // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        var lineExtent = geometry.getExtent();
+
+        // 영역을 사각형 형태로 변환합니다.
+        var LineextentPolygon = new ol.geom.Polygon.fromExtent(lineExtent);
+
+        // 사각형 피처를 생성하고 스타일을 설정합니다. (예: 녹색으로 채우기)
+        var LineextentFeature = new ol.Feature(LineextentPolygon);
+        LineextentFeature.setStyle(new ol.style.Style({
+            fill: new ol.style.Fill({
+                color: 'rgba(0, 255, 0, 0.3)' // 녹색, 반투명도 0.3
+            }),
+            stroke: new ol.style.Stroke({
+                color: 'green',
+                width: 1
+            })
+        }));
+
+        // 벡터 레이어에 사각형 피처를 추가합니다.
+        var LineextentLayer = new ol.layer.Vector({
+            source: new ol.source.Vector({
+                features: [LineextentFeature]
+            })
+        });
+        
+        map.addLayer(LineextentLayer);
+
+      // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+      if (geometry instanceof ol.geom.LineString && circle.intersectsExtent(geometry.getExtent())) {
+          intersectingLines.push(feature);
+      }
+  });
+  return intersectingLines;
+}
+
+function check(coord){
+  // 원을 정의합니다. 반경은 미터 단위로 1000을 사용합니다. (1km)
+  marker1.setPosition(coord);
+
+  var circle = new ol.geom.Circle(marker1.getPosition(), 50);
+  
+  // 원의 피처를 생성합니다.
+  var circleFeature = new ol.Feature(circle);
+  
+  // 원의 스타일을 정의합니다. (빨간색으로 표시)
+  circleFeature.setStyle(new ol.style.Style({
+      fill: new ol.style.Fill({
+          color: 'rgba(0,0,0,0.3)'
+      }),
+      stroke: new ol.style.Stroke({
+          color: 'rgba(0,0,0,0)'
+      })
+  }));
+  
+  // 원을 그릴 벡터 레이어를 생성합니다.
+  var vectorLayer = new ol.layer.Vector({
+      source: new ol.source.Vector({
+          features: [circleFeature]
+      })
+  });
+  
+  // 벡터 레이어를 지도에 추가합니다.
+  map.addLayer(vectorLayer);
+  
+
+  // 사용 예:
+  var intersectingLines = findIntersectingLines(circle, lineSource);
+  console.log(intersectingLines);  // 겹치는 라인 객체들을 콘솔에 출력
+  
+  /*
+  if(intersectingLines[0]){
+    intersectingLines[0].setStyle(lineCheckStyle);
+  }
+  */
 
 // 라인 Feature들의 배열
-var lines = [lineFeature, lineFeature2];
+//var lines = [lineFeature, lineFeature2];
 
 // 거리를 계산하고 저장할 객체
 var distances = {};
 
 // 각 라인과 마커 사이의 거리를 계산합니다.
-for (var i = 0; i < lines.length; i++) {
-    var line = lines[i];
-    var lineCoordinates = line.getGeometry().getCoordinates();
-
-    var shortestDistance = Infinity;
-
-    // 라인의 각 좌표와 마커 사이의 거리를 계산합니다.
-    for (var j = 0; j < lineCoordinates.length; j++) {
-        var coord = lineCoordinates[j];
-        var distance = ol.sphere.getDistance(coord, marker1.getPosition());
-
-        if (distance < shortestDistance) {
-            shortestDistance = distance;
-        }
-    }
-
-    distances[i] = shortestDistance;
+if(intersectingLines){
+  for (var i = 0; i < intersectingLines.length; i++) {
+      var line = intersectingLines[i];
+      var lineCoordinates = line.getGeometry().getCoordinates();
+  
+      var shortestDistance = Infinity;
+  
+      // 라인의 각 좌표와 마커 사이의 거리를 계산합니다.
+      for (var j = 0; j < lineCoordinates.length; j++) {
+          var coord = lineCoordinates[j];
+          var distance = ol.sphere.getDistance(coord, marker1.getPosition());
+  
+          if (distance < shortestDistance) {
+              shortestDistance = distance;
+          }
+      }
+  
+      distances[i] = shortestDistance;
+  }
 }
 
 // 가장 짧은 거리를 찾습니다.
@@ -110,7 +232,7 @@ var closestLine;
 for (var i in distances) {
     if (distances[i] < shortestDistance) {
         shortestDistance = distances[i];
-        closestLine = lines[i];
+        closestLine = intersectingLines[i];
     }
 }
 
@@ -152,13 +274,23 @@ for (var i = 0; i < closestLine.getGeometry().getCoordinates().length - 1; i++) 
 
 marker1.setPosition(closestPoint);
 console.log(closestPoint);
-
+  
+}
 
 map.on('click', function(evt) {
   // 클릭한 위치의 좌표를 가져옵니다.
   var coordinate = evt.coordinate;
   console.log(coordinate)
+
+  check(coordinate);
+
+
+  
 });
+
+
+
+
     </script>
 </body>
 </html>

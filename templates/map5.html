@@ -9,49 +9,10 @@
 </head>
  
 <body>
-    <select onchange="updateViewProjection(this.value);">
-        <option value="EPSG:3857">EPSG:3857</option>
-        <option value="EPSG:4326">EPSG:4326</option>
-    </select>
-    <form id="dataForm">
-        <input type="hidden" name="key" value="F6342F62-1FE6-3AE7-A404-6B9E0583385C">
-        <input type="hidden" name="domain" value="http://localhost:8080">
-        <input type="hidden" name="service" value="data">
-        <input type="hidden" name="version" value="2.0">
-        <input type="hidden" name="request" value="getfeature">
-        <input type="hidden" name="format" value="json">
-        <input type="hidden" name="size" value="1000">
-        <input type="hidden" name="page" value="1">
-        <input type="hidden" name="data" value="lt_l_moctlink">
-        <input type="hidden" name="geometry" value="true">
-        <input type="hidden" name="attribute" value="true">
-        <input type="hidden" name="crs" value="EPSG:3857">
-        <input type="hidden" name="buffer" value="100">
-        <input type="hidden" name="geomfilter" value="POINT(14149214.380024165 4494012.047228456)">
-    </form>
 <div id="map" style="width: 100%; height: 800px; left: 0px; top: 0px"></div>
  
 <script type="text/javascript">
-function updateViewProjection(viewProjSelect) {
-    var newProj = ol.proj.get(viewProjSelect);
-    var newProjExtent;
-    newProjExtent = newProj.getExtent();
-    centerc = ol.proj.transform([127.100616,37.402142], 'EPSG:4326', viewProjSelect);
-     
-    olView2 = new ol.View({
-        center : centerc,
-        projection: newProj,
-        extent: newProjExtent || undefined,
-        zoom: 7,
-        minZoom : 0,
-        maxZoom : 21
-    })
-    map.setView(olView2);
-    $('[name=crs]').val(viewProjSelect);
-}
- 
- 
- 
+
     var Base = new ol.layer.Tile({
         name : "Base",
         source: new ol.source.XYZ({
@@ -64,149 +25,185 @@ function updateViewProjection(viewProjSelect) {
         zoom: 14
     })// 뷰 설정
      
+    var vectorSource = new ol.source.Vector();
+    var vectorLayer = new ol.layer.Vector({
+      source: vectorSource,
+      style : new ol.style.Style({
+        stroke: new ol.style.Stroke({
+                color: 'blue',
+                width: 10
+            })
+        })
+    });
+    var newLine_vectorSource = new ol.source.Vector();
+    var newLine_vectorLayer = new ol.layer.Vector({
+      source: newLine_vectorSource,
+      style : new ol.style.Style({
+        stroke: new ol.style.Stroke({
+                color: 'red',
+                width: 10
+            })
+        })
+    });
      
     var map = new ol.Map({
-        layers: [Base],
+        layers: [Base,vectorLayer,newLine_vectorLayer],
         target: 'map',
         view: olView
     });
-    /* 폴리곤의 스타일 설정 */
-    var vectorStyle = function(feature) {
-        var style = new ol.style.Style({
+    var lineFeatures = []; // 개별 라인 객체를 저장할 배열
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('static', filename='map.geojson') }}",
+        dataType: 'json',
+        success: function(response){
+          var format = new ol.format.GeoJSON();
+          var features = format.readFeatures(response, {
+            dataProjection: 'EPSG:4326',
+            featureProjection: 'EPSG:3857'
+          });
+    
+          vectorSource.addFeatures(features);
+        }
+    });
+
+    map.on("click", function(evt) {
+        var center = evt.coordinate;
+        // 현재 화면에 겹치는 피처들을 가져옵니다.
+        var featuresInExtent = vectorSource.getFeaturesInExtent(map.getView().calculateExtent(map.getSize()));
+        lineFeatures = []; // 개별 라인 객체를 저장할 배열
+        // 라인 스타일 지정
+        var lineStyle = new ol.style.Style({
             stroke: new ol.style.Stroke({
-                color: [0, 255, 255, 1],
-                width: 5
-            }),
-            fill: new ol.style.Fill({
-                color: [20, 0, 200, .7]
+                color: 'red',
+                width: 2
             })
         });
-        return [style];
-    }
- 
-    var wms_title = '연속지적도';
-    var wms_val = 'lt_l_moctlink';
- 
-    var wms_tile = new ol.layer.Tile({
-        name : "WMS_LAYER",
-        source : new ol.source.TileWMS({
-            url : "http://api.vworld.kr/req/wms?",
-            params : {
-                LAYERS : wms_val,
-                STYLES : wms_val,
-                CRS : "EPSG:900913",
-                apikey : "F6342F62-1FE6-3AE7-A404-6B9E0583385C",
-                DOMAIN : "http://loacalhost:4444",
-                title : wms_title,
-                FORMAT : "image/png",
-                domain : "http://localhost"
+
+        featuresInExtent.forEach(function(feature) {
+            var coordinates = feature.getGeometry().getFlatCoordinates();
+            for (var i = 0; i < coordinates.length - 1; i += 2) {
+                var lineCoordinates = [coordinates[i], coordinates[i + 1]];
+                var lineCoordinates2 = [coordinates[i+2], coordinates[i + 3]];
+                var lineGeom = new ol.geom.LineString([lineCoordinates , lineCoordinates2]);
+                var lineFeature = new ol.Feature({
+                    geometry: lineGeom
+                });
+                lineFeature.setStyle(lineStyle);  // 스타일 적용
+                lineFeatures.push(lineFeature);
             }
-        })
-    });
-    map.addLayer(wms_tile);
-     
-    //현재 중심좌표기준으로 반경 내 Data API(LP_PA_CBND_BUBUN : 연속지적도) 검색
-    map.on("click", function(evt) {
-        
-        //var center = map.getView().getCenter();
-        var center = evt.coordinate;
-        var features = new Array();
-        $('[name=geomfilter]').val('POINT('+center[0]+' '+center[1]+')');       
-        var 거리값 = 50; //단위는 M
-        $('[name=buffer]').val(거리값)
-        $.ajax({
-            type: "get",
-            url: "http://api.vworld.kr/req/data",
-            data : $('#dataForm').serialize(),
-            dataType: 'jsonp',
-            async: false,
-            success: function(data) {
-                features = (new ol.format.GeoJSON()).readFeatures(data.response.result.featureCollection)
-                console.log(features);
-            },complete: function(){
-                  
-                var radius = drawMeter(map,거리값,center);
-                 
-                var feature1 = new ol.Feature({
-                    geometry: new ol.geom.Circle(center,radius)
-                    ,id:"circle"
-                });
-                features.push(feature1);
-                vectorSource = new ol.source.Vector({
-                    features:features
-                })
-                var VectorLayer = new ol.layer.Vector({
-                    source: vectorSource,
-                    id:"vectorLayer",
-                    style: vectorStyle
-                });
-                map.getLayers().forEach(function(layer){
-                  console.log(layer);
-                  if(layer){
-                    if(layer.get("id")=="vectorLayer"){
-                        map.removeLayer(layer);//기존결과 삭제
-                    }
-                  }
-                })
-                map.addLayer(VectorLayer);
+        });
+        //vectorSource.clear(); // 이전에 추가된 피처들 제거
+        newLine_vectorSource.clear();
+        newLine_vectorSource.addFeatures(lineFeatures);
 
-
-
-                var circle = feature1.getGeometry();
-                var polygon = ol.geom.Polygon.fromCircle(circle);
-                var turfPolygon = new ol.format.GeoJSON().writeGeometryObject(polygon);
-                
-                var intersectionFeatures = []; // 겹치는 부분의 피처들을 저장할 배열
-                features.forEach(function(lineFeature) {
-                    var line = lineFeature.getGeometry();
-                    var turfLine = new ol.format.GeoJSON().writeGeometryObject(line);
-                    
-                    var intersection = turf.lineIntersect(turfLine, turfPolygon);
-                    if (intersection.features.length > 0) {
-                        intersection.features.forEach(function(intersectedPoint) {
-                            var point = new ol.format.GeoJSON().readFeature(intersectedPoint);
-                            intersectionFeatures.push(point);
-                        });
-                    }
-                });
-                var intersectionSource = new ol.source.Vector({
-                  features: intersectionFeatures
-                });
-                var intersectionLayer = new ol.layer.Vector({
-                    source: intersectionSource,
-                    style: new ol.style.Style({
-                        image: new ol.style.Circle({
-                            radius: 5,
-                            fill: new ol.style.Fill({
-                                color: 'red'
-                            })
+        var nearestLine = findNearestLineFeature(center);
+        if (nearestLine) {
+            var lineCoordinates = nearestLine.getGeometry().getCoordinates();
+            var minDistance = Infinity;
+            var footPoint = null;
+            for (var i = 0; i < lineCoordinates.length - 1; i++) {
+                var segmentStart = lineCoordinates[i];
+                var segmentEnd = lineCoordinates[i + 1];
+                var foot = footOfPerpendicular(center, segmentStart, segmentEnd);
+                var dist = distance(center, foot);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    footPoint = foot;
+                }
+            }
+            if (footPoint) {
+                var pointFeature = new ol.Feature(new ol.geom.Point(footPoint));
+                var pointStyle = new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 5,
+                        fill: new ol.style.Fill({
+                            color: 'white'
                         })
                     })
                 });
-                map.addLayer(intersectionLayer);
+                pointFeature.setStyle(pointStyle);
+
+                newLine_vectorSource.clear();
+                newLine_vectorSource.addFeature(pointFeature);
+            }
+        }
+
+    });
+    
+    
 
 
-            },
-             
-            error: function(xhr, stat, err) {}
-        });
-    })
-     
-    //원주율 실제거리 계산
-    var drawMeter = function(map, radius, cood) {
-        var view = map.getView(); // 맴객체의 뷰
-        var projection = view.getProjection(); // 프로젝션 정보를 가지고옴 EPGS:3857
-        var resolutionAtEquator = view.getResolution(); //해상도 
-        //var pointResolution = projection.getPointResolution(resolutionAtEquator, cood); //점포인트의 해상도 Openlayers 3버전??
-        var pointResolution = ol.proj.getPointResolution(projection,resolutionAtEquator, cood); //점포인트의 해상도 Openlayers 4버전??
-         
-         
-        var resolutionFactor = resolutionAtEquator/pointResolution; //
-        var radius = (radius / ol.proj.Units.METERS_PER_UNIT.m) * resolutionFactor;
-        return radius;
+    // @@@@@@@@@@@@@@@@@ 함수 정의 시작
+    function distance(point1, point2) {
+        var dx = point2[0] - point1[0];
+        var dy = point2[1] - point1[1];
+        return Math.sqrt(dx*dx + dy*dy);
     }
-         
- 
+    function footOfPerpendicular(point, segmentStart, segmentEnd) {
+        var v = [segmentEnd[0] - segmentStart[0], segmentEnd[1] - segmentStart[1]];
+        var w = [point[0] - segmentStart[0], point[1] - segmentStart[1]];
+        
+        var c1 = w[0]*v[0] + w[1]*v[1];
+        
+        if (c1 <= 0) return segmentStart;
+        
+        var c2 = v[0]*v[0] + v[1]*v[1];
+        
+        if (c2 <= c1) return segmentEnd;
+        
+        var b = c1 / c2;
+        return [segmentStart[0] + b * v[0], segmentStart[1] + b * v[1]];
+    }
+    function pointToSegmentDistance(point, segmentStart, segmentEnd) {
+        var v = [segmentEnd[0] - segmentStart[0], segmentEnd[1] - segmentStart[1]];
+        var w = [point[0] - segmentStart[0], point[1] - segmentStart[1]];
+        
+        var c1 = w[0]*v[0] + w[1]*v[1];
+        if (c1 <= 0) return distance(point, segmentStart);
+        
+        var c2 = v[0]*v[0] + v[1]*v[1];
+        if (c2 <= c1) return distance(point, segmentEnd);
+        
+        var b = c1 / c2;
+        var projection = [segmentStart[0] + b * v[0], segmentStart[1] + b * v[1]];
+        
+        return distance(point, projection);
+    }
+    
+    function pointToLineDistance(point, lineCoordinates) {
+        var minDistance = Infinity;
+        for (var i = 0; i < lineCoordinates.length - 1; i++) {
+            var segmentStart = lineCoordinates[i];
+            var segmentEnd = lineCoordinates[i + 1];
+            var dist = pointToSegmentDistance(point, segmentStart, segmentEnd);
+            if (dist < minDistance) {
+                minDistance = dist;
+            }
+        }
+        return minDistance;
+    }
+    
+    function findNearestLineFeature(point) {
+        var minDistance = Infinity;
+        var nearestLine = null;
+        
+        for (var i = 0; i < lineFeatures.length; i++) {
+            var lineFeature = lineFeatures[i];
+            var lineCoordinates = lineFeature.getGeometry().getCoordinates();
+            var dist = pointToLineDistance(point, lineCoordinates);
+            if (dist < minDistance) {
+                minDistance = dist;
+                nearestLine = lineFeature;
+            }
+        }
+        return nearestLine;
+    }
+
+    // @@@@@@@@@@@@@@@@@ 함수 정의 끝
+
+
+
 </script>
 </body>
 </html>

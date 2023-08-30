@@ -21,8 +21,8 @@
     }); // WMTS API 사용
    
     var olView = new ol.View({
-        center: [14149214.380024165, 4494012.047228456],//좌표계 변환
-        zoom: 14
+        center: [14149700.310902106, 4503986.840786144],//좌표계 변환
+        zoom: 17
     })// 뷰 설정
      
     var vectorSource = new ol.source.Vector();
@@ -45,9 +45,43 @@
             })
         })
     });
-     
+    var finalSource = new ol.source.Vector();
+    var finalLayer = new ol.layer.Vector({
+      source: finalSource,
+      style : new ol.style.Style({
+        stroke: new ol.style.Stroke({
+                color: 'red',
+                width: 10
+            })
+        })
+    });
+
+    var finalNewSource = new ol.source.Vector();
+    var finalNewLayer = new ol.layer.Vector({
+      source: finalNewSource,
+      style : new ol.style.Style({
+        stroke: new ol.style.Stroke({
+                color: 'red',
+                width: 10
+            })
+        })
+    });
+
+
+
+    var NewSource = new ol.source.Vector();
+    var NewLayer = new ol.layer.Vector({
+      source: NewSource,
+      style : new ol.style.Style({
+        stroke: new ol.style.Stroke({
+                color: 'red',
+                width: 10
+            })
+        })
+    });
+
     var map = new ol.Map({
-        layers: [Base,vectorLayer,newLine_vectorLayer],
+        layers: [Base,vectorLayer,newLine_vectorLayer, finalLayer , finalNewLayer , NewLayer],
         target: 'map',
         view: olView
     });
@@ -67,6 +101,8 @@
         }
     });
 
+    var preCoord;
+    var newSegments = [];
     map.on("click", function(evt) {
         var center = evt.coordinate;
         // 현재 화면에 겹치는 피처들을 가져옵니다.
@@ -99,39 +135,134 @@
 
         var nearestLine = findNearestLineFeature(center);
         if (nearestLine) {
-            var lineCoordinates = nearestLine.getGeometry().getCoordinates();
-            var minDistance = Infinity;
-            var footPoint = null;
-            for (var i = 0; i < lineCoordinates.length - 1; i++) {
-                var segmentStart = lineCoordinates[i];
-                var segmentEnd = lineCoordinates[i + 1];
-                var foot = footOfPerpendicular(center, segmentStart, segmentEnd);
-                var dist = distance(center, foot);
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    footPoint = foot;
-                }
-            }
-            if (footPoint) {
-                var pointFeature = new ol.Feature(new ol.geom.Point(footPoint));
-                var pointStyle = new ol.style.Style({
-                    image: new ol.style.Circle({
-                        radius: 5,
-                        fill: new ol.style.Fill({
-                            color: 'white'
-                        })
+
+            var footPoint = getfootPoint(nearestLine,center,0);
+            console.log(footPoint);
+            if(preCoord){
+                var finalStyle = new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: 'white',
+                        width: 10
                     })
                 });
-                pointFeature.setStyle(pointStyle);
+                var lineGeom = new ol.geom.LineString([preCoord , footPoint]);
+                var lineFeature = new ol.Feature({
+                    geometry: lineGeom
+                });
 
-                newLine_vectorSource.clear();
-                newLine_vectorSource.addFeature(pointFeature);
+                lineFeature.setStyle(finalStyle);  // 스타일 적용
+                finalSource.addFeature(lineFeature);
+                var splitLines = splitLineStringByDistance(lineFeature, 0.5);
+
+                preCoord = footPoint;
+
+
+                newSegments.forEach(function(feature) {
+                    var center = getMidpointOfLine(feature);
+                    var nearestLine = findNearestLineFeature(center);
+                    if (nearestLine) {
+                        getfootPoint(nearestLine,center,1);
+                    }
+                });
+            }else{
+                preCoord = footPoint;
             }
         }
-
     });
+
+function getfootPoint(line,center,deps){
+    var lineCoordinates = line.getGeometry().getCoordinates();
+    var minDistance = Infinity;
+    var footPoint = null;
+    for (var i = 0; i < lineCoordinates.length - 1; i++) {
+        var segmentStart = lineCoordinates[i];
+        var segmentEnd = lineCoordinates[i + 1];
+        var foot = footOfPerpendicular(center, segmentStart, segmentEnd);
+        var dist = distance(center, foot);
+        if (dist < minDistance) {
+            minDistance = dist;
+            footPoint = foot;
+        }
+    }
+    if (footPoint) {
+        var pointFeature = new ol.Feature(new ol.geom.Point(footPoint));
+        var pointStyle = new ol.style.Style({
+            image: new ol.style.Circle({
+                radius: 5,
+                fill: new ol.style.Fill({
+                    color: 'white'
+                })
+            })
+        });
+        pointFeature.setStyle(pointStyle);
+
+        if(deps == 0){
+            newLine_vectorSource.clear();
+            newLine_vectorSource.addFeature(pointFeature);
+        }else{
+            NewSource.addFeature(pointFeature);
+        }
+    }
+    return footPoint;
+}
+function getMidpointOfLine(lineString) {
+    const coordinates = lineString.getGeometry().getCoordinates();
+    const start = coordinates[0];
+    const end = coordinates[coordinates.length - 1];
+
+    const midX = (start[0] + end[0]) / 2;
+    const midY = (start[1] + end[1]) / 2;
+
+    return [midX, midY];
+}
+
+function getDistance(point1, point2) {
+    let dx = point2[0] - point1[0];
+    let dy = point2[1] - point1[1];
     
-    
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function splitLineStringByDistance(lineString, distance) {
+  const coordinates = lineString.getGeometry().getCoordinates();
+  newSegments = [];
+
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    let start = coordinates[i];
+    let end = coordinates[i + 1];
+
+    let segmentLength = getDistance(start, end);
+    if (segmentLength <= distance) {
+      newSegments.push([start, end]);
+    } else {
+      let numOfSubSegments = Math.ceil(segmentLength / distance);
+      let fraction = 1 / numOfSubSegments;
+
+      for (let j = 0; j < numOfSubSegments; j++) {
+        let newStart = lineString.getGeometry().getCoordinateAt(j * fraction);
+        let newEnd = lineString.getGeometry().getCoordinateAt((j + 1) * fraction);
+
+        var finalStyle = new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'black',
+                width: 10
+            })
+        });
+        var lineGeom = new ol.geom.LineString([newStart , newEnd]);
+        var lineFeature = new ol.Feature({
+            geometry: lineGeom
+        });
+
+        lineFeature.setStyle(finalStyle);  // 스타일 적용
+        finalNewSource.addFeature(lineFeature);
+        newSegments.push(lineFeature);
+      }
+      
+      
+    }
+  }
+
+}
 
 
     // @@@@@@@@@@@@@@@@@ 함수 정의 시작

@@ -49,7 +49,6 @@
 <script type="text/javascript">
 
     var timer = null;
-    var timer_sw = 0;
     var map_type = 0;
     var preCoord;
     var finalLinePoint;
@@ -175,7 +174,6 @@
             data: {
             },
             success: function(response) {
-                timer_sw = 0;
                 dataset(response.coordinates);
             },
             error: function(error) {
@@ -191,7 +189,6 @@
             data: {
             },
             success: function(response) {
-                timer_sw = 0;
                 dataset(response.coordinates);
             },
             error: function(error) {
@@ -207,7 +204,6 @@
             data: {
             },
             success: function(response) {
-                timer_sw = 0;
                 dataset(response.coordinates);
             },
             error: function(error) {
@@ -281,23 +277,20 @@ function dataset(coordinate){
     var currentIndex = 0;
     reset(0);
     timer = setInterval(function() {
-        if(timer_sw == 0){
-            if (currentIndex < coordinate.length) {
-                var item = coordinate[currentIndex];
-                var center = [item.x_point , item.y_point];
-    
-                getPoint(center);
-                currentIndex++;  // 다음 인덱스로 이동
-            }else{
-                console.log("end");
-                timer_sw = 1;
-                clearInterval(timer);
-                $("button").attr('disabled',false);
-                $("#map_3").attr('disabled',true);
-                $("#dataset3").attr('disabled',true);
-                $("#live_start").attr('disabled',true);
-                $("#live_stop").attr('disabled',true);
-            }
+        if (currentIndex < coordinate.length) {
+            var item = coordinate[currentIndex];
+            var center = [item.x_point , item.y_point];
+
+            getPoint(center);
+            currentIndex++;  // 다음 인덱스로 이동
+        }else{
+            console.log("end");
+            clearInterval(timer);
+            $("button").attr('disabled',false);
+            $("#map_3").attr('disabled',true);
+            $("#dataset3").attr('disabled',true);
+            $("#live_start").attr('disabled',true);
+            $("#live_stop").attr('disabled',true);
         }
     }, 100);
 }

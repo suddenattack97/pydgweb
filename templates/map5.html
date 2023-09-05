@@ -70,12 +70,12 @@
     })// 뷰 설정
      
     var vectorSource = new ol.source.Vector();
-    var newLine_vectorSource = new ol.source.Vector();
     var finalSource = new ol.source.Vector();
     var finalNewSource = new ol.source.Vector();
     var NewSource = new ol.source.Vector();
     var finalLineSource = new ol.source.Vector();
 
+    // 지도 위에 도로 벡터 저장소
     var vectorLayer = new ol.layer.Vector({
       source: vectorSource,
       style : new ol.style.Style({
@@ -85,15 +85,8 @@
             })
         })
     });
-    var newLine_vectorLayer = new ol.layer.Vector({
-      source: newLine_vectorSource,
-      style : new ol.style.Style({
-        stroke: new ol.style.Stroke({
-                color: 'red',
-                width: 10
-            })
-        })
-    });
+
+
     var finalLayer = new ol.layer.Vector({
       source: finalSource,
       style : new ol.style.Style({
@@ -130,8 +123,9 @@
               })
           })
       });
+
     var map = new ol.Map({
-        layers: [Base,vectorLayer,newLine_vectorLayer, finalLayer , finalNewLayer , NewLayer , finalLineLayer],
+        layers: [Base,vectorLayer, finalLayer , finalNewLayer , NewLayer , finalLineLayer],
         target: 'map',
         view: olView
     });
@@ -223,17 +217,7 @@
     });
 
     $("#map_1").click(function(){
-        vectorSource.clear();
-        preCoord = null;
-        finalLinePoint = null;
-        newSegments = [];
-        newPoint = [];
-    
-        newLine_vectorSource.clear();
-        finalSource.clear();
-        finalNewSource.clear();
-        NewSource.clear();
-        finalLineSource.clear();
+        reset(1);
         map_type = 0;
         $.ajax({
             type: "GET",
@@ -251,17 +235,7 @@
         });
     });
     $("#map_2").click(function(){
-        vectorSource.clear();
-        preCoord = null;
-        finalLinePoint = null;
-        newSegments = [];
-        newPoint = [];
-    
-        newLine_vectorSource.clear();
-        finalSource.clear();
-        finalNewSource.clear();
-        NewSource.clear();
-        finalLineSource.clear();
+        reset(1);
         map_type = 1;
         $.ajax({
             type: "GET",
@@ -288,20 +262,24 @@
         
     });
 
-function dataset(coordinate){
-    $("button").attr('disabled',true);
-    var currentIndex = 0;
+function reset(type){
+    if(type == 1){
+        vectorSource.clear();
+    }
     preCoord = null;
     finalLinePoint = null;
     newSegments = [];
     newPoint = [];
 
-    newLine_vectorSource.clear();
     finalSource.clear();
     finalNewSource.clear();
     NewSource.clear();
     finalLineSource.clear();
-
+}
+function dataset(coordinate){
+    $("button").attr('disabled',true);
+    var currentIndex = 0;
+    reset(0);
     timer = setInterval(function() {
         if(timer_sw == 0){
             if (currentIndex < coordinate.length) {
@@ -330,12 +308,6 @@ function getPoint(center){
     lineFeatures = []; // 개별 라인 객체를 저장할 배열
     newPoint = [];
     // 라인 스타일 지정
-    var lineStyle = new ol.style.Style({
-        stroke: new ol.style.Stroke({
-            color: 'red',
-            width: 2
-        })
-    });
 
     featuresInExtent.forEach(function(feature) {
         var coordinates = feature.getGeometry().getFlatCoordinates();
@@ -346,13 +318,10 @@ function getPoint(center){
             var lineFeature = new ol.Feature({
                 geometry: lineGeom
             });
-            lineFeature.setStyle(lineStyle);  // 스타일 적용
             lineFeatures.push(lineFeature);
         }
     });
     //vectorSource.clear(); // 이전에 추가된 피처들 제거
-    newLine_vectorSource.clear();
-    newLine_vectorSource.addFeatures(lineFeatures);
 
     var nearestLine = findNearestLineFeature(center);
     if (nearestLine) {
@@ -414,7 +383,6 @@ function getPoint(center){
             lineFeature2.setStyle(finalLineStyle);  // 스타일 적용
             finalLineSource.addFeature(lineFeature);
             finalLineSource.addFeature(lineFeature2);
-
             //// ###############################   맨 끝 점과 잘라진 점을 이어붙인다.
             //// ###############################   맨 끝 점과 잘라진 점을 이어붙인다.
             //// ###############################   맨 끝 점과 잘라진 점을 이어붙인다.
@@ -431,14 +399,6 @@ function getPoint(center){
                 finalLineSource.addFeature(lineFeature);
             }
 
-           //console.log(temp_point);
-           //console.log(finalLinePoint);
-           //var lineGeom = new ol.geom.LineString([finalLinePoint , temp_point]);
-           //var lineFeature = new ol.Feature({
-           //    geometry: lineGeom
-           //});
-           //lineFeature.setStyle(finalLineStyle);  // 스타일 적용
-           //finalLineSource.addFeature(lineFeature);
         }else{
             preCoord = footPoint;
         }
@@ -471,12 +431,7 @@ function getfootPoint(line,center,deps){
         });
         pointFeature.setStyle(pointStyle);
 
-        if(deps == 0){
-            newLine_vectorSource.clear();
-            newLine_vectorSource.addFeature(pointFeature);
-        }else{
-            NewSource.addFeature(pointFeature);
-        }
+        NewSource.addFeature(pointFeature);
     }
     return footPoint;
 }

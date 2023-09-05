@@ -51,7 +51,6 @@
     var timer = null;
     var map_type = 0;
     var preCoord;
-    var finalLinePoint;
     var newSegments = []; 
     var newPoint = []; 
     var lineFeatures = []; // 개별 라인 객체를 저장할 배열
@@ -263,7 +262,6 @@ function reset(type){
         vectorSource.clear();
     }
     preCoord = null;
-    finalLinePoint = null;
     newSegments = [];
     newPoint = [];
 

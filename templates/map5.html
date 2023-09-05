@@ -48,13 +48,6 @@
 
 <script type="text/javascript">
 
-    var timer = null;
-    var map_type = 0;
-    var preCoord;
-    var newSegments = []; 
-    var newPoint = []; 
-    var lineFeatures = []; // 개별 라인 객체를 저장할 배열
-
     var Base = new ol.layer.Tile({
         name : "Base",
         source: new ol.source.XYZ({
@@ -248,15 +241,6 @@
         });
     });
 
-
-    $("#map_3").click(function(){
-    });
-
-
-    $("#live_start").click(function(){
-        
-    });
-
 function reset(type){
     if(type == 1){
         vectorSource.clear();
@@ -264,6 +248,12 @@ function reset(type){
     preCoord = null;
     newSegments = [];
     newPoint = [];
+var timer = null;
+var map_type = 0;
+var preCoord;
+var newSegments = []; 
+var newPoint = []; 
+var lineFeatures = []; // 개별 라인 객체를 저장할 배열
 
     finalSource.clear();
     finalNewSource.clear();

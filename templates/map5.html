@@ -197,6 +197,8 @@
     });
 
 
+    var dataindex = 0;
+
     $("#dataset1").click(function(){
         $.ajax({
             type: "POST",
@@ -204,8 +206,8 @@
             data: {
             },
             success: function(response) {
-                data_index++;
-                dataset(response.coordinates);
+                dataindex++;
+                dataset(response.coordinates,dataindex);
             },
             error: function(error) {
                 console.error('Error saving coordinate:', error);
@@ -220,8 +222,8 @@
             data: {
             },
             success: function(response) {
-                data_index++;
-                dataset(response.coordinates);
+                dataindex++;
+                dataset(response.coordinates,dataindex);
             },
             error: function(error) {
                 console.error('Error saving coordinate:', error);
@@ -245,26 +247,14 @@
     });
 
 var map_type = 0;
-
-var data_index = 0;
-
 var first_flag = true;
 var preCoord = [];
 var newSegments = []; 
 var newPoint = []; 
 var lineFeatures = []; // 개별 라인 객체를 저장할 배열
 
-function resolveAfterSeconds() {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 100);
-    });
-  }
 
-async function dataset(coordinate){
-
-    await resolveAfterSeconds();
+function dataset(coordinate,data_index){
 
     first_flag = false;
     preCoord[data_index] = [];
@@ -276,7 +266,7 @@ async function dataset(coordinate){
         console.log("@@@");
         setTimeout(function() {
             var center = [item.x_point , item.y_point];
-            getPoint(center);
+            getPoint(center,data_index);
             currentIndex++;  // 다음 인덱스로 이동
         }, 100);
     });
@@ -284,7 +274,7 @@ async function dataset(coordinate){
 }
 
 
-function getPoint(center){
+function getPoint(center,data_index){
     var featuresInExtent = vectorSource.getFeaturesInExtent(map.getView().calculateExtent(map.getSize()));
     // 라인 스타일 지정
     lineFeatures[data_index] = [];
@@ -304,7 +294,7 @@ function getPoint(center){
     });
     //vectorSource.clear(); // 이전에 추가된 피처들 제거
 
-    var nearestLine = findNearestLineFeature(center);
+    var nearestLine = findNearestLineFeature(center,data_index);
     if (nearestLine) {
 
         var footPoint = getfootPoint(nearestLine,center,0);
@@ -328,14 +318,14 @@ function getPoint(center){
 
             lineFeature.setStyle(finalStyle);  // 스타일 적용
             finalSource.addFeature(lineFeature);
-            var splitLines = splitLineStringByDistance(lineFeature, 10);
+            var splitLines = splitLineStringByDistance(lineFeature, 10, data_index);
 
             newSegments[data_index].forEach(function(feature) {
                 if(feature.length > 1){
                     return true;
                 }
                 var center = getMidpointOfLine(feature);
-                var nearestLine = findNearestLineFeature(center);
+                var nearestLine = findNearestLineFeature(center, data_index);
                 if (nearestLine) {
                     newPoint[data_index].push(getfootPoint(nearestLine,center,1));
                 }
@@ -347,7 +337,7 @@ function getPoint(center){
             
             var lineGeom = new ol.geom.LineString([preCoord[data_index] , newPoint[data_index][0]]);
             preCoord[data_index] = footPoint;
-            var lineGeom2 = new ol.geom.LineString([preCoord[data_index] , newPoint[data_index][newPoint.length-1]]);
+            var lineGeom2 = new ol.geom.LineString([preCoord[data_index] , newPoint[data_index][newPoint[data_index].length-1]]);
 
             var lineFeature = new ol.Feature({
                 geometry: lineGeom
@@ -429,7 +419,7 @@ function getDistance(point1, point2) {
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-function splitLineStringByDistance(lineString, distance) {
+function splitLineStringByDistance(lineString, distance , data_index) {
   const coordinates = lineString.getGeometry().getCoordinates();
   newSegments[data_index] = [];
 
@@ -520,7 +510,7 @@ function splitLineStringByDistance(lineString, distance) {
         return minDistance;
     }
     
-    function findNearestLineFeature(point) {
+    function findNearestLineFeature(point,data_index) {
         var minDistance = Infinity;
         var nearestLine = null;
         

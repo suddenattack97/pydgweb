@@ -205,7 +205,6 @@
     });
 
     $("#map_1").click(function(){
-        reset(1);
         map_type = 0;
         $.ajax({
             type: "GET",
@@ -223,7 +222,6 @@
         });
     });
     $("#map_2").click(function(){
-        reset(1);
         map_type = 1;
         $.ajax({
             type: "GET",
@@ -241,13 +239,7 @@
         });
     });
 
-function reset(type){
-    if(type == 1){
-        vectorSource.clear();
-    }
-    preCoord = null;
-    newSegments = [];
-    newPoint = [];
+
 var timer = null;
 var map_type = 0;
 var preCoord;
@@ -255,11 +247,6 @@ var newSegments = [];
 var newPoint = []; 
 var lineFeatures = []; // 개별 라인 객체를 저장할 배열
 
-    finalSource.clear();
-    finalNewSource.clear();
-    NewSource.clear();
-    finalLineSource.clear();
-}
 function dataset(coordinate){
     $("button").attr('disabled',true);
     var currentIndex = 0;

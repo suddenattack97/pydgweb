@@ -48,6 +48,8 @@
 
 <script type="text/javascript">
 
+    var data_index = 0;
+
     var Base = new ol.layer.Tile({
         name : "Base",
         source: new ol.source.XYZ({
@@ -159,51 +161,6 @@
         
     });
 
-    $("#dataset1").click(function(){
-        $.ajax({
-            type: "POST",
-            url: "/dataset1", 
-            data: {
-            },
-            success: function(response) {
-                dataset(response.coordinates);
-            },
-            error: function(error) {
-                console.error('Error saving coordinate:', error);
-            }
-        });
-    });    
-
-    $("#dataset2").click(function(){
-        $.ajax({
-            type: "POST",
-            url: "/dataset2",
-            data: {
-            },
-            success: function(response) {
-                dataset(response.coordinates);
-            },
-            error: function(error) {
-                console.error('Error saving coordinate:', error);
-            }
-        });
-    });
-
-    $("#dataset3").click(function(){
-        $.ajax({
-            type: "POST",
-            url: "/dataset3",
-            data: {
-            },
-            success: function(response) {
-                dataset(response.coordinates);
-            },
-            error: function(error) {
-                console.error('Error saving coordinate:', error);
-            }
-        });
-    });
-
     $("#map_1").click(function(){
         map_type = 0;
         $.ajax({
@@ -240,42 +197,98 @@
     });
 
 
-var timer = null;
+    $("#dataset1").click(function(){
+        $.ajax({
+            type: "POST",
+            url: "/dataset1", 
+            data: {
+            },
+            success: function(response) {
+                data_index++;
+                dataset(response.coordinates);
+            },
+            error: function(error) {
+                console.error('Error saving coordinate:', error);
+            }
+        });
+    });    
+
+    $("#dataset2").click(function(){
+        $.ajax({
+            type: "POST",
+            url: "/dataset2",
+            data: {
+            },
+            success: function(response) {
+                data_index++;
+                dataset(response.coordinates);
+            },
+            error: function(error) {
+                console.error('Error saving coordinate:', error);
+            }
+        });
+    });
+
+    $("#dataset3").click(function(){
+        $.ajax({
+            type: "POST",
+            url: "/dataset3",
+            data: {
+            },
+            success: function(response) {
+                dataset(response.coordinates);
+            },
+            error: function(error) {
+                console.error('Error saving coordinate:', error);
+            }
+        });
+    });
+
 var map_type = 0;
-var preCoord;
+
+var data_index = 0;
+
+var first_flag = true;
+var preCoord = [];
 var newSegments = []; 
 var newPoint = []; 
 var lineFeatures = []; // 개별 라인 객체를 저장할 배열
 
-function dataset(coordinate){
-    $("button").attr('disabled',true);
-    var currentIndex = 0;
-    reset(0);
-    timer = setInterval(function() {
-        if (currentIndex < coordinate.length) {
-            var item = coordinate[currentIndex];
-            var center = [item.x_point , item.y_point];
+function resolveAfterSeconds() {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 100);
+    });
+  }
 
+async function dataset(coordinate){
+
+    await resolveAfterSeconds();
+
+    first_flag = false;
+    preCoord[data_index] = [];
+
+    //$("button").attr('disabled',true);
+    var currentIndex = 0;
+    console.log("###");
+    coordinate.forEach(function(item){
+        console.log("@@@");
+        setTimeout(function() {
+            var center = [item.x_point , item.y_point];
             getPoint(center);
             currentIndex++;  // 다음 인덱스로 이동
-        }else{
-            console.log("end");
-            clearInterval(timer);
-            $("button").attr('disabled',false);
-            $("#map_3").attr('disabled',true);
-            $("#dataset3").attr('disabled',true);
-            $("#live_start").attr('disabled',true);
-            $("#live_stop").attr('disabled',true);
-        }
-    }, 100);
+        }, 100);
+    });
+
 }
 
 
 function getPoint(center){
     var featuresInExtent = vectorSource.getFeaturesInExtent(map.getView().calculateExtent(map.getSize()));
-    lineFeatures = []; // 개별 라인 객체를 저장할 배열
-    newPoint = [];
     // 라인 스타일 지정
+    lineFeatures[data_index] = [];
+    newPoint[data_index] = [];
 
     featuresInExtent.forEach(function(feature) {
         var coordinates = feature.getGeometry().getFlatCoordinates();
@@ -286,7 +299,7 @@ function getPoint(center){
             var lineFeature = new ol.Feature({
                 geometry: lineGeom
             });
-            lineFeatures.push(lineFeature);
+            lineFeatures[data_index].push(lineFeature);
         }
     });
     //vectorSource.clear(); // 이전에 추가된 피처들 제거
@@ -295,7 +308,7 @@ function getPoint(center){
     if (nearestLine) {
 
         var footPoint = getfootPoint(nearestLine,center,0);
-        if(preCoord){
+        if(first_flag){
             var finalStyle = new ol.style.Style({
                 stroke: new ol.style.Stroke({
                     color: 'white',
@@ -308,7 +321,7 @@ function getPoint(center){
                     width: 20
                 })
             });
-            var lineGeom = new ol.geom.LineString([preCoord , footPoint]);
+            var lineGeom = new ol.geom.LineString([preCoord[data_index] , footPoint]);
             var lineFeature = new ol.Feature({
                 geometry: lineGeom
             });
@@ -317,30 +330,25 @@ function getPoint(center){
             finalSource.addFeature(lineFeature);
             var splitLines = splitLineStringByDistance(lineFeature, 10);
 
-            newSegments.forEach(function(feature) {
+            newSegments[data_index].forEach(function(feature) {
                 if(feature.length > 1){
                     return true;
                 }
                 var center = getMidpointOfLine(feature);
                 var nearestLine = findNearestLineFeature(center);
                 if (nearestLine) {
-                    newPoint.push(getfootPoint(nearestLine,center,1));
+                    newPoint[data_index].push(getfootPoint(nearestLine,center,1));
                 }
             });
             
             //// ###############################   맨 앞 점과 잘라진 점을 이어붙인다.
             //// ###############################   맨 앞 점과 잘라진 점을 이어붙인다.
             //// ###############################   맨 앞 점과 잘라진 점을 이어붙인다.
-            var startPoint1 = preCoord;
-            var endPoint1 = newPoint[0];
+            
+            var lineGeom = new ol.geom.LineString([preCoord[data_index] , newPoint[data_index][0]]);
+            preCoord[data_index] = footPoint;
+            var lineGeom2 = new ol.geom.LineString([preCoord[data_index] , newPoint[data_index][newPoint.length-1]]);
 
-            preCoord = footPoint;
-
-            var startPoint2 = preCoord;
-            var endPoint2 = newPoint[newPoint.length-1];
-
-            var lineGeom = new ol.geom.LineString([startPoint1 , endPoint1]);
-            var lineGeom2 = new ol.geom.LineString([startPoint2 , endPoint2]);
             var lineFeature = new ol.Feature({
                 geometry: lineGeom
             });
@@ -356,9 +364,9 @@ function getPoint(center){
             //// ###############################   맨 끝 점과 잘라진 점을 이어붙인다.
 
 
-            for (var i = 0; i < newPoint.length - 1; i++) {
-                var lineCoordinates = newPoint[i];
-                var lineCoordinates2 = newPoint[i+1];
+            for (var i = 0; i < newPoint[data_index].length - 1; i++) {
+                var lineCoordinates = newPoint[data_index][i];
+                var lineCoordinates2 = newPoint[data_index][i+1];
                 var lineGeom = new ol.geom.LineString([lineCoordinates , lineCoordinates2]);
                 var lineFeature = new ol.Feature({
                     geometry: lineGeom
@@ -366,9 +374,9 @@ function getPoint(center){
                 lineFeature.setStyle(finalLineStyle);  // 스타일 적용
                 finalLineSource.addFeature(lineFeature);
             }
-
         }else{
-            preCoord = footPoint;
+            preCoord[data_index] = footPoint;
+            first_flag = true
         }
     }
 }
@@ -423,7 +431,7 @@ function getDistance(point1, point2) {
 
 function splitLineStringByDistance(lineString, distance) {
   const coordinates = lineString.getGeometry().getCoordinates();
-  newSegments = [];
+  newSegments[data_index] = [];
 
   for (let i = 0; i < coordinates.length - 1; i++) {
     let start = coordinates[i];
@@ -431,7 +439,7 @@ function splitLineStringByDistance(lineString, distance) {
 
     let segmentLength = getDistance(start, end);
     if (segmentLength <= distance) {
-      newSegments.push([start, end]);
+      newSegments[data_index].push([start, end]);
     } else {
       let numOfSubSegments = Math.ceil(segmentLength / distance);
       let fraction = 1 / numOfSubSegments;
@@ -453,9 +461,8 @@ function splitLineStringByDistance(lineString, distance) {
 
         lineFeature.setStyle(finalStyle);  // 스타일 적용
         finalNewSource.addFeature(lineFeature);
-        newSegments.push(lineFeature);
+        newSegments[data_index].push(lineFeature);
       }
-      
       
     }
   }
@@ -517,8 +524,8 @@ function splitLineStringByDistance(lineString, distance) {
         var minDistance = Infinity;
         var nearestLine = null;
         
-        for (var i = 0; i < lineFeatures.length; i++) {
-            var lineFeature = lineFeatures[i];
+        for (var i = 0; i < lineFeatures[data_index].length; i++) {
+            var lineFeature = lineFeatures[data_index][i];
             var lineCoordinates = lineFeature.getGeometry().getCoordinates();
             var dist = pointToLineDistance(point, lineCoordinates);
             if (dist < minDistance) {

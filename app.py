@@ -52,6 +52,12 @@ def dataset1():
         coordinates = [{"idx": row[0], "x_point": row[1], "y_point": row[2]} for row in rows]
         
         return jsonify({"status": "success", "coordinates": coordinates}), 200
+        query = "SELECT COUNT(DISTINCT car_id) from dataset"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        car_cnt = [{"cnt": row[0] } for row in rows ]
+        
+        return jsonify({"status": "success", "coordinates": coordinates , "car_cnt" : car_cnt}), 200
     except Exception as e:
         print("General error:", e)
         return jsonify({"status": "error", "message": "General error: {}".format(e)}), 500

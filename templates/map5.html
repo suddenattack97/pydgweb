@@ -197,54 +197,34 @@
     });
 
 
-    var dataindex = 0;
+var dataindex = 0;
 
-    $("#dataset1").click(function(){
-        $.ajax({
-            type: "POST",
-            url: "/dataset1", 
-            data: {
-            },
-            success: function(response) {
-                dataindex++;
-                dataset(response.coordinates,dataindex);
-            },
-            error: function(error) {
-                console.error('Error saving coordinate:', error);
-            }
-        });
-    });    
-
-    $("#dataset2").click(function(){
-        $.ajax({
-            type: "POST",
-            url: "/dataset2",
-            data: {
-            },
-            success: function(response) {
-                dataindex++;
-                dataset(response.coordinates,dataindex);
-            },
-            error: function(error) {
-                console.error('Error saving coordinate:', error);
-            }
-        });
+function loadDataset(url, index) {
+    $.ajax({
+        type: "POST",
+        url: url,
+        data: {},
+        success: function(response) {
+            dataindex++;
+            dataset(response.coordinates, index);
+        },
+        error: function(error) {
+            console.error('Error loading dataset:', error);
+        }
     });
+}
 
-    $("#dataset3").click(function(){
-        $.ajax({
-            type: "POST",
-            url: "/dataset3",
-            data: {
-            },
-            success: function(response) {
-                dataset(response.coordinates);
-            },
-            error: function(error) {
-                console.error('Error saving coordinate:', error);
-            }
-        });
-    });
+$("#dataset1").click(async function() {
+    await loadDataset("/dataset1", 0);
+});
+
+$("#dataset2").click(async function() {
+    await loadDataset("/dataset2", 1);
+});
+
+$("#dataset3").click(async function() {
+    await loadDataset("/dataset3", 2);
+});
 
 var map_type = 0;
 var first_flag = true;
@@ -253,24 +233,23 @@ var newSegments = [];
 var newPoint = []; 
 var lineFeatures = []; // 개별 라인 객체를 저장할 배열
 
-
-function dataset(coordinate,data_index){
-
+async function dataset(coordinate, data_index) {
     first_flag = false;
     preCoord[data_index] = [];
-
-    //$("button").attr('disabled',true);
     var currentIndex = 0;
     console.log("###");
-    coordinate.forEach(function(item){
-        console.log("@@@");
-        setTimeout(function() {
-            var center = [item.x_point , item.y_point];
-            getPoint(center,data_index);
-            currentIndex++;  // 다음 인덱스로 이동
-        }, 100);
-    });
 
+    for (let item of coordinate) {
+        console.log("@@@");
+        await new Promise(resolve => {
+            setTimeout(() => {
+                var center = [item.x_point, item.y_point];
+                getPoint(center, data_index);
+                currentIndex++;
+                resolve();
+            }, 100);
+        });
+    }
 }
 
 

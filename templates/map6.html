@@ -47,7 +47,22 @@
     </div>
 
 <script type="text/javascript">
-
+    var Base = new ol.layer.Tile({
+        name : "Base",
+        source: new ol.source.XYZ({
+            url: 'http://api.vworld.kr/req/wmts/1.0.0/F6342F62-1FE6-3AE7-A404-6B9E0583385C/Base/{z}/{y}/{x}.png'
+        })
+    }); // WMTS API 사용
+    var olView = new ol.View({
+        center: [14141717.242680727, 4509815.091367054],//좌표계 변환
+        zoom: 13.7
+    })// 뷰 설정
+    var map = new ol.Map({
+        layers: [Base],
+        target: 'map',
+        view: olView
+    });
+    
 </script>
 </body>
 </html>

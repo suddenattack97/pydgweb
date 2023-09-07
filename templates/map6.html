@@ -62,7 +62,32 @@
         target: 'map',
         view: olView
     });
-    
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('static', filename='level_13.geojson') }}",
+        dataType: 'json',
+        success: function(response){
+          var format = new ol.format.GeoJSON();
+          var features = format.readFeatures(response, {
+            dataProjection: 'EPSG:4326',
+            featureProjection: 'EPSG:3857'
+          });
+        // 지도 위에 도로 벡터 저장소
+        var vectorSource = new ol.source.Vector();
+        var vectorLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style : new ol.style.Style({
+              stroke: new ol.style.Stroke({
+                      color: 'blue',
+                      width: 5
+                  })
+              })
+          });
+          vectorSource.addFeatures(features);
+          map.addLayer(vectorLayer);  
+        }
+    });
+
 </script>
 </body>
 </html>

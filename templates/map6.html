@@ -47,6 +47,60 @@
     </div>
 
 <script type="text/javascript">
+
+    var vectorSource = new ol.source.Vector();
+    var finalSource = new ol.source.Vector();
+    var finalNewSource = new ol.source.Vector();
+    var NewSource = new ol.source.Vector();
+    var finalLineSource = new ol.source.Vector();
+
+    // 지도 위에 도로 벡터 저장소
+    var vectorLayer = new ol.layer.Vector({
+        source: vectorSource,
+        style : new ol.style.Style({
+          stroke: new ol.style.Stroke({
+                  color: 'blue',
+                  width: 5
+              })
+          })
+      });
+      var finalLayer = new ol.layer.Vector({
+        source: finalSource,
+        style : new ol.style.Style({
+          stroke: new ol.style.Stroke({
+                  color: 'red',
+                  width: 10
+              })
+          })
+      });
+      var finalNewLayer = new ol.layer.Vector({
+        source: finalNewSource,
+        style : new ol.style.Style({
+          stroke: new ol.style.Stroke({
+                  color: 'red',
+                  width: 10
+              })
+          })
+      });
+      var NewLayer = new ol.layer.Vector({
+        source: NewSource,
+        style : new ol.style.Style({
+          stroke: new ol.style.Stroke({
+                  color: 'red',
+                  width: 10
+              })
+          })
+      });
+      var finalLineLayer = new ol.layer.Vector({
+          source: finalLineSource,
+          style : new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                    color: 'green',
+                    width: 30
+                })
+            })
+        });
+
     var Base = new ol.layer.Tile({
         name : "Base",
         source: new ol.source.XYZ({
@@ -58,7 +112,7 @@
         zoom: 13.7
     })// 뷰 설정
     var map = new ol.Map({
-        layers: [Base],
+        layers: [Base,vectorLayer, finalLayer , finalNewLayer , NewLayer , finalLineLayer],
         target: 'map',
         view: olView
     });
@@ -73,20 +127,291 @@
             featureProjection: 'EPSG:3857'
           });
         // 지도 위에 도로 벡터 저장소
-        var vectorSource = new ol.source.Vector();
-        var vectorLayer = new ol.layer.Vector({
-            source: vectorSource,
-            style : new ol.style.Style({
-              stroke: new ol.style.Stroke({
-                      color: 'blue',
-                      width: 5
-                  })
-              })
-          });
           vectorSource.addFeatures(features);
-          map.addLayer(vectorLayer);  
         }
     });
+    $("#dataset1").click(function() {
+    $.ajax({
+        type: "POST",
+        url: '/dataset1',
+        data: {},
+        success: function(response) {
+            dataset(response.coordinates);
+        },
+        error: function(error) {
+            console.error('Error loading dataset:', error);
+        }
+    });
+});
+
+var finalStyle = new ol.style.Style({
+    stroke: new ol.style.Stroke({
+        color: 'white',
+        width: 10
+    })
+});
+var finalLineStyle = new ol.style.Style({
+    stroke: new ol.style.Stroke({
+        color: 'green',
+        width: 20
+    })
+});
+
+var first_flag = [] ;
+var preCoord = [];
+var newSegments = []; 
+var newPoint = []; 
+var lineFeatures = []; // 개별 라인 객체를 저장할 배열
+
+function dataset(coordinate) {
+    var currentIndex = 0;
+    
+    console.log(coordinate);
+    coordinate.forEach(function(item){
+        console.log("@@@");
+        setTimeout(function() {
+            var car_id = item.car_id;
+            var xy_date = item.xydate;
+            var center = [item.x_point , item.y_point];
+            getPoint(center,car_id);
+            currentIndex++;  // 다음 인덱스로 이동
+        }, 100);
+    });
+};
+
+function getPoint(center,car_id){
+    var featuresInExtent = vectorSource.getFeaturesInExtent(map.getView().calculateExtent(map.getSize()));
+    // 라인 스타일 지정
+    lineFeatures[car_id] = [];
+    newPoint[car_id] = [];
+    
+    featuresInExtent.forEach(function(feature) {
+        var coordinates = feature.getGeometry().getFlatCoordinates();
+        for (var i = 0; i < coordinates.length - 1; i += 2) {
+            var lineCoordinates = [coordinates[i], coordinates[i + 1]];
+            var lineCoordinates2 = [coordinates[i+2], coordinates[i + 3]];
+            var lineGeom = new ol.geom.LineString([lineCoordinates , lineCoordinates2]);
+            var lineFeature = new ol.Feature({
+                geometry: lineGeom
+            });
+            lineFeatures[car_id].push(lineFeature);
+        }
+    });
+    var nearestLine = findNearestLineFeature(center,car_id);
+    if (nearestLine) {
+        var footPoint = getfootPoint(nearestLine,center);
+        console.log(first_flag[car_id]);
+        if(first_flag[car_id]){
+            var lineGeom = new ol.geom.LineString([preCoord[car_id] , footPoint]);
+            var lineFeature = new ol.Feature({
+                geometry: lineGeom
+            });
+            lineFeature.setStyle(finalStyle);  // 스타일 적용
+            finalSource.addFeature(lineFeature);
+            
+            splitLineStringByDistance(lineFeature, 10, car_id);
+
+            //// ###############################  라인간의 선을 n빵 시키는 로직
+            newSegments[car_id].forEach(function(feature) {
+                if(feature.length > 1){
+                    return true;
+                }
+                var center = getMidpointOfLine(feature);
+                var nearestLine = findNearestLineFeature(center, car_id);
+                if (nearestLine) {
+                    newPoint[car_id].push(getfootPoint(nearestLine,center));
+                }
+            });
+            //// ###############################  라인간의 선을 n빵 시키는 로직
+
+            //// ###############################   맨 앞 점과 잘라진 점을 이어붙인다.
+            var lineGeom = new ol.geom.LineString([preCoord[car_id] , newPoint[car_id][0]]);
+            preCoord[car_id] = footPoint;
+            var lineGeom2 = new ol.geom.LineString([preCoord[car_id] , newPoint[car_id][newPoint[car_id].length-1]]);
+
+            var lineFeature = new ol.Feature({
+                geometry: lineGeom
+            });
+            var lineFeature2 = new ol.Feature({
+                geometry: lineGeom2
+            });
+            lineFeature.setStyle(finalLineStyle);  // 스타일 적용
+            lineFeature2.setStyle(finalLineStyle);  // 스타일 적용
+            finalLineSource.addFeature(lineFeature);
+            finalLineSource.addFeature(lineFeature2);
+            //// ###############################   맨 끝 점과 잘라진 점을 이어붙인다.
+
+
+            //// ###############################   새로 도로 위 매칭된 수선의 발들을 모두 이어붙인다.
+            for (var i = 0; i < newPoint[car_id].length - 1; i++) {
+                var lineCoordinates = newPoint[car_id][i];
+                var lineCoordinates2 = newPoint[car_id][i+1];
+                var lineGeom = new ol.geom.LineString([lineCoordinates , lineCoordinates2]);
+                var lineFeature = new ol.Feature({
+                    geometry: lineGeom
+                });
+                lineFeature.setStyle(finalLineStyle);  // 스타일 적용
+                finalLineSource.addFeature(lineFeature);
+            }
+            //// ###############################   새로 도로 위 매칭된 수선의 발들을 모두 이어붙인다.
+        }else{
+            preCoord[car_id] = footPoint;
+            first_flag[car_id] = true
+        }
+
+    }
+
+};
+
+function getDistance(point1, point2) {
+    let dx = point2[0] - point1[0];
+    let dy = point2[1] - point1[1];
+    
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getMidpointOfLine(lineString) {
+    const coordinates = lineString.getGeometry().getCoordinates();
+    const start = coordinates[0];
+    const end = coordinates[coordinates.length - 1];
+
+    const midX = (start[0] + end[0]) / 2;
+    const midY = (start[1] + end[1]) / 2;
+
+    return [midX, midY];
+}
+
+function splitLineStringByDistance(lineString, distance , car_id) {
+    const coordinates = lineString.getGeometry().getCoordinates();
+    newSegments[car_id] = [];
+  
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      let start = coordinates[i];
+      let end = coordinates[i + 1];
+  
+      let segmentLength = getDistance(start, end);
+      if (segmentLength <= distance) {
+        newSegments[car_id].push([start, end]);
+      } else {
+        let numOfSubSegments = Math.ceil(segmentLength / distance);
+        let fraction = 1 / numOfSubSegments;
+  
+        for (let j = 0; j < numOfSubSegments; j++) {
+          let newStart = lineString.getGeometry().getCoordinateAt(j * fraction);
+          let newEnd = lineString.getGeometry().getCoordinateAt((j + 1) * fraction);
+  
+          var finalStyle = new ol.style.Style({
+              stroke: new ol.style.Stroke({
+                  color: 'black',
+                  width: 10
+              })
+          });
+          var lineGeom = new ol.geom.LineString([newStart , newEnd]);
+          var lineFeature = new ol.Feature({
+              geometry: lineGeom
+          });
+  
+          lineFeature.setStyle(finalStyle);  // 스타일 적용
+          finalNewSource.addFeature(lineFeature);
+          newSegments[car_id].push(lineFeature);
+        }
+        
+      }
+    }
+  
+  };  
+
+function getfootPoint(line,center){
+    var lineCoordinates = line.getGeometry().getCoordinates();
+    var minDistance = Infinity;
+    var footPoint = null;
+    for (var i = 0; i < lineCoordinates.length - 1; i++) {
+        var segmentStart = lineCoordinates[i];
+        var segmentEnd = lineCoordinates[i + 1];
+        var foot = footOfPerpendicular(center, segmentStart, segmentEnd);
+        var dist = getDistance(center, foot);
+        if (dist < minDistance) {
+            minDistance = dist;
+            footPoint = foot;
+        }
+    }
+    if (footPoint) {
+        var pointFeature = new ol.Feature(new ol.geom.Point(footPoint));
+        var pointStyle = new ol.style.Style({
+            image: new ol.style.Circle({
+                radius: 5,
+                fill: new ol.style.Fill({
+                    color: 'pink'
+                })
+            })
+        });
+        pointFeature.setStyle(pointStyle);
+
+        NewSource.addFeature(pointFeature);
+    }
+    return footPoint;
+}
+
+function footOfPerpendicular(point, segmentStart, segmentEnd) {
+    var v = [segmentEnd[0] - segmentStart[0], segmentEnd[1] - segmentStart[1]];
+    var w = [point[0] - segmentStart[0], point[1] - segmentStart[1]];
+    
+    var c1 = w[0]*v[0] + w[1]*v[1];
+    
+    if (c1 <= 0) return segmentStart;
+    
+    var c2 = v[0]*v[0] + v[1]*v[1];
+    
+    if (c2 <= c1) return segmentEnd;
+    
+    var b = c1 / c2;
+    return [segmentStart[0] + b * v[0], segmentStart[1] + b * v[1]];
+}
+
+function pointToSegmentDistance(point, segmentStart, segmentEnd) {
+    var v = [segmentEnd[0] - segmentStart[0], segmentEnd[1] - segmentStart[1]];
+    var w = [point[0] - segmentStart[0], point[1] - segmentStart[1]];
+    
+    var c1 = w[0]*v[0] + w[1]*v[1];
+    if (c1 <= 0) return getDistance(point, segmentStart);
+    
+    var c2 = v[0]*v[0] + v[1]*v[1];
+    if (c2 <= c1) return getDistance(point, segmentEnd);
+    
+    var b = c1 / c2;
+    var projection = [segmentStart[0] + b * v[0], segmentStart[1] + b * v[1]];
+    
+    return getDistance(point, projection);
+}
+
+function pointToLineDistance(point, lineCoordinates) {
+    var minDistance = Infinity;
+    for (var i = 0; i < lineCoordinates.length - 1; i++) {
+        var segmentStart = lineCoordinates[i];
+        var segmentEnd = lineCoordinates[i + 1];
+        var dist = pointToSegmentDistance(point, segmentStart, segmentEnd);
+        if (dist < minDistance) {
+            minDistance = dist;
+        }
+    }
+    return minDistance;
+}
+
+function findNearestLineFeature(point,car_id) {
+    var minDistance = Infinity;
+    var nearestLine = null;
+    
+    for (var i = 0; i < lineFeatures[car_id].length; i++) {
+        var lineFeature = lineFeatures[car_id][i];
+        var lineCoordinates = lineFeature.getGeometry().getCoordinates();
+        var dist = pointToLineDistance(point, lineCoordinates);
+        if (dist < minDistance) {
+            minDistance = dist;
+            nearestLine = lineFeature;
+        }
+    }
+    return nearestLine;
+}
 
 </script>
 </body>

@@ -45,7 +45,7 @@
             <div id="map" style="width: 100%; height: 730px; left: 0px; top: 0px"></div>
         </div>
     </div>
-
+    <div id="marker" style="width: 20px; height: 20px; background-color: red;"></div>
 <script type="text/javascript">
 
     var vectorSource = new ol.source.Vector();
@@ -163,15 +163,34 @@ var newSegments = [];
 var newPoint = []; 
 var lineFeatures = []; // 개별 라인 객체를 저장할 배열
 
+var marker = [];
+
 function dataset(coordinate,car_cnt) {
     var currentIndex = 0;
     console.log(car_cnt[0]['cnt']);
     coordinate.forEach(function(item){
-        marker[item.car_id] = [];
+        if(!marker[item.car_id]){
+            var marker_content= document.createElement("div"); // 오버레이 팝업설정 
+            marker_content.innerHTML+="<div id='truck' style='margin-top:-30px; margin-left: -30px;' class=''>\n\
+            <img style='-webkit-user-drag: none; width:52px !important; height:52px !important;' src='{{ url_for('static', filename='truck.png') }}'/></div>";
+
+            marker[item.car_id] = new ol.Overlay({
+                id:item.car_id,
+                element:marker_content,
+                stopEvent : false,
+                position: [item.x_point , item.y_point],
+                dragging: true
+            });
+            map.addOverlay(marker[item.car_id]);	
+        }
+
         setTimeout(function() {
             var car_id = item.car_id;
             var xy_date = item.xydate;
-            var center = [item.x_point , item.y_point];
+            var center = [item.x_point , item.y_point]
+            if(marker[item.car_id]){
+                marker[item.car_id].setPosition(center);
+            }
             getPoint(center,car_id);
             currentIndex++;  // 다음 인덱스로 이동
         }, 100);

@@ -109,7 +109,7 @@
     }); // WMTS API 사용
     var olView = new ol.View({
         center: [14141717.242680727, 4509815.091367054],//좌표계 변환
-        zoom: 13.7
+        zoom: 13
     })// 뷰 설정
     var map = new ol.Map({
         layers: [Base,vectorLayer, finalLayer , finalNewLayer , NewLayer , finalLineLayer],
@@ -136,7 +136,7 @@
         url: '/dataset1',
         data: {},
         success: function(response) {
-            dataset(response.coordinates);
+            dataset(response.coordinates,response.car_cnt);
         },
         error: function(error) {
             console.error('Error loading dataset:', error);
@@ -163,12 +163,11 @@ var newSegments = [];
 var newPoint = []; 
 var lineFeatures = []; // 개별 라인 객체를 저장할 배열
 
-function dataset(coordinate) {
+function dataset(coordinate,car_cnt) {
     var currentIndex = 0;
-    
-    console.log(coordinate);
+    console.log(car_cnt[0]['cnt']);
     coordinate.forEach(function(item){
-        console.log("@@@");
+        marker[item.car_id] = [];
         setTimeout(function() {
             var car_id = item.car_id;
             var xy_date = item.xydate;

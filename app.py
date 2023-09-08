@@ -49,9 +49,8 @@ def dataset1():
         rows = cursor.fetchall()
         
         # 결과를 딕셔너리 리스트로 변환
-        coordinates = [{"idx": row[0], "x_point": row[1], "y_point": row[2]} for row in rows]
+        coordinates = [{"idx": row[0], "xy_date": row[1],"car_id": row[2], "x_point": row[3], "y_point": row[4]} for row in rows]
         
-        return jsonify({"status": "success", "coordinates": coordinates}), 200
         query = "SELECT COUNT(DISTINCT car_id) from dataset"
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -122,6 +121,7 @@ def dataset3():
 @app.route('/save-coordinate', methods=['POST'])
 def save_coordinate():
     print("@")
+    car_id = request.form['car_id']
     x = request.form['x']
     y = request.form['y']
 
@@ -135,8 +135,8 @@ def save_coordinate():
 
     try:
         # 좌표를 데이터베이스에 저장
-        query = "INSERT INTO dataset (x_point, y_point) VALUES (%s, %s)"
-        cursor.execute(query, (x, y))
+        query = "INSERT INTO dataset (xy_date, car_id, x_point, y_point) VALUES (now(), %s, %s, %s)"
+        cursor.execute(query, (car_id, x, y))
         cnx.commit()
         return jsonify({"status": "success", "message": "Coordinate saved successfully"}), 200
     except Exception as e:

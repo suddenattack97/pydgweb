@@ -113,7 +113,11 @@
         view: olView
     });
 
-    
+    // 지도의 'moveend' 이벤트를 사용하여 지도가 움직일 때마다 extent를 업데이트
+    map.on('moveend', function() {
+        var currentExtent = map.getView().calculateExtent(map.getSize());
+        vectorLayer.setExtent(currentExtent);
+    });
 
     /*
     var wms_title = '연속지적도';

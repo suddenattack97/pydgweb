@@ -248,8 +248,8 @@ function getPoint(center,car_id){
             var lineFeature = new ol.Feature({
                 geometry: lineGeom
             });
-            lineFeature.setStyle(finalStyle);  // 스타일 적용
-            finalSource.addFeature(lineFeature);
+            //lineFeature.setStyle(finalStyle);  // 스타일 적용
+            //finalSource.addFeature(lineFeature);
             
             splitLineStringByDistance(lineFeature, 10, car_id);
 
@@ -342,19 +342,19 @@ function splitLineStringByDistance(lineString, distance , car_id) {
           let newStart = lineString.getGeometry().getCoordinateAt(j * fraction);
           let newEnd = lineString.getGeometry().getCoordinateAt((j + 1) * fraction);
   
-          var finalStyle = new ol.style.Style({
-              stroke: new ol.style.Stroke({
-                  color: 'black',
-                  width: 10
-              })
-          });
+          //var finalStyle = new ol.style.Style({
+          //    stroke: new ol.style.Stroke({
+          //        color: 'black',
+          //        width: 10
+          //    })
+          //});
           var lineGeom = new ol.geom.LineString([newStart , newEnd]);
           var lineFeature = new ol.Feature({
               geometry: lineGeom
           });
   
-          lineFeature.setStyle(finalStyle);  // 스타일 적용
-          finalNewSource.addFeature(lineFeature);
+          //lineFeature.setStyle(finalStyle);  // 스타일 적용
+          //finalNewSource.addFeature(lineFeature);
           newSegments[car_id].push(lineFeature);
         }
         

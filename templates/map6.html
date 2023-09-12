@@ -166,13 +166,34 @@
         url: '/dataset1',
         data: {},
         success: function(response) {
-            dataset(response.coordinates,response.car_cnt);
+            dataset(response.coordinates);
         },
         error: function(error) {
             console.error('Error loading dataset:', error);
         }
     });
 });
+
+if (!!window.EventSource) {
+    var source = new EventSource('/events');
+
+    source.addEventListener('message', function(e) {
+        var newCoordinates = JSON.parse(e.data);
+        dataset(newCoordinates);  // 새로운 데이터를 지도에 추가
+    }, false);
+
+    source.addEventListener('open', function(e) {
+        console.log("SSE 연결이 열렸습니다.");
+    }, false);
+
+    source.addEventListener('error', function(e) {
+        if (e.readyState == EventSource.CLOSED) {
+            console.log("SSE 연결이 종료되었습니다.");
+        }
+    }, false);
+} else {
+    console.log("브라우저에서 SSE를 지원하지 않습니다.");
+}
 
 var finalLineStyle = new ol.style.Style({
     stroke: new ol.style.Stroke({
@@ -189,9 +210,9 @@ var lineFeatures = []; // 개별 라인 객체를 저장할 배열
 
 var marker = [];
 
-function dataset(coordinate,car_cnt) {
+function dataset(coordinate) {
+    
     var currentIndex = 0;
-    console.log(car_cnt[0]['cnt']);
     coordinate.forEach(function(item){
         if(!marker[item.car_id]){
             var marker_content= document.createElement("div"); // 오버레이 팝업설정 

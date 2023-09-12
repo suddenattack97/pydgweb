@@ -100,8 +100,8 @@ def dataset1():
         cursor.close()
         cnx.close()
 
-@app.route('/dataset2', methods=['POST'])
-def dataset2():
+@app.route('/data_reset', methods=['POST'])
+def data_reset():
     cnx = pymysql.connect(
         host="localhost",  # 예: "localhost"
         user="root",  # 예: "root"
@@ -111,21 +111,17 @@ def dataset2():
     cursor = cnx.cursor()
     try:
         # 좌표를 데이터베이스에 저장
-        query = "SELECT * from dataset_2"
+        query = "TRUNCATE TABLE dataset"
         cursor.execute(query)
-        # 모든 결과 행 가져오기
-        rows = cursor.fetchall()
-        
-        # 결과를 딕셔너리 리스트로 변환
-        coordinates = [{"idx": row[0], "x_point": row[1], "y_point": row[2]} for row in rows]
-        
-        return jsonify({"status": "success", "coordinates": coordinates}), 200
+        cnx.commit()
+        return jsonify({"status": "success", "message": "Coordinate saved successfully"}), 200
     except Exception as e:
         print("General error:", e)
         return jsonify({"status": "error", "message": "General error: {}".format(e)}), 500
     finally:
         cursor.close()
         cnx.close()
+        
         
 @app.route('/dataset3', methods=['POST'])
 def dataset3():

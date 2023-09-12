@@ -203,12 +203,14 @@ $("#dataset1").click(function() {
         $("#dataset1").css('color','buttontext');
     }
 });
+
+$("#dataset2").click(function() {
     $.ajax({
         type: "POST",
-        url: '/dataset1',
+        url: '/data_reset',
         data: {},
         success: function(response) {
-            dataset(response.coordinates);
+            location.reload();
         },
         error: function(error) {
             console.error('Error loading dataset:', error);
@@ -306,8 +308,6 @@ function getPoint(center,car_id){
         if(marker[car_id]){
             marker[car_id].setPosition(footPoint);
         }
-
-        console.log(first_flag[car_id]);
         if(first_flag[car_id]){
             var lineGeom = new ol.geom.LineString([preCoord[car_id] , footPoint]);
             var lineFeature = new ol.Feature({

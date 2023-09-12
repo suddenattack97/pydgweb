@@ -34,6 +34,39 @@ def map5():
 @app.route('/map6')
 def map6():
     return render_template('map6.html')
+@app.route('/events')
+def sse():
+    def event_stream():
+        last_id = None  # 마지막으로 가져온 데이터의 ID
+        while True:
+            cnx = pymysql.connect(
+                host="localhost",
+                user="root",
+                password="2412",
+                database="road"
+            )
+            cursor = cnx.cursor()
+
+            # 마지막 ID 이후의 새로운 데이터를 가져오기
+            if last_id:
+                query = f"SELECT * from dataset WHERE idx > {last_id} ORDER BY idx ASC"
+            else:
+                query = "SELECT * from dataset ORDER BY idx ASC"
+            
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+            # 새로운 데이터가 있으면 클라이언트에 전송
+            if rows:
+                last_id = rows[-1][0]
+                coordinates = [{"idx": row[0], "xy_date": row[1], "car_id": row[2], "x_point": row[3], "y_point": row[4]} for row in rows]
+                yield f"data: {json.dumps(coordinates)}\n\n"
+            
+            cursor.close()
+            cnx.close()
+            time.sleep(1)  # 1초 간격으로 데이터베이스 조회
+
+    return Response(event_stream(), mimetype="text/event-stream")
 
 @app.route('/dataset1', methods=['POST'])
 def dataset1():

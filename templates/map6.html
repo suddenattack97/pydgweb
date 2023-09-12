@@ -241,6 +241,8 @@ $("#map1").click(function() {
             vectorSource.addFeatures(features);
             map.getView().setCenter([14141717.242680727,4509815.091367054]);
             map.getView().setZoom(13);
+
+            sse();
         }
     });
 });
@@ -267,29 +269,36 @@ $("#map2").click(function() {
         }
     });
 });
+$("#map1").click();
 
-
-if (!!window.EventSource) {
-    var source = new EventSource('/events');
-
-    source.addEventListener('message', function(e) {
-        var newCoordinates = JSON.parse(e.data);
-        dataset(newCoordinates);  // 새로운 데이터를 지도에 추가
-    }, false);
-
-    source.addEventListener('open', function(e) {
-        console.log("SSE 연결이 열렸습니다.");
-    }, false);
-
-    source.addEventListener('error', function(e) {
-        if (e.readyState == EventSource.CLOSED) {
-            console.log("SSE 연결이 종료되었습니다.");
-        }
-    }, false);
-} else {
-    console.log("브라우저에서 SSE를 지원하지 않습니다.");
+function sse(){
+    if (!!window.EventSource) {
+        var source = new EventSource('/events');
+    
+        source.addEventListener('message', function(e) {
+            var newCoordinates = JSON.parse(e.data);
+            console.log(e);
+            if(e){
+                if(vectorSource){
+                    dataset(newCoordinates);  // 새로운 데이터를 지도에 추가
+                }
+            }
+        }, false);
+    
+        source.addEventListener('open', function(e) {
+            console.log("SSE 연결이 열렸습니다.");
+        }, false);
+    
+        source.addEventListener('error', function(e) {
+            if (e.readyState == EventSource.CLOSED) {
+                console.log("SSE 연결이 종료되었습니다.");
+            }
+        }, false);
+    } else {
+        console.log("브라우저에서 SSE를 지원하지 않습니다.");
+    }
+    
 }
-
 var finalLineStyle = new ol.style.Style({
     stroke: new ol.style.Stroke({
         color: 'green',
@@ -324,13 +333,13 @@ function dataset(coordinate) {
             map.addOverlay(marker[item.car_id]);	
         }
 
-        setTimeout(function() {
+        //setTimeout(function() {
             var car_id = item.car_id;
             var xy_date = item.xydate;
             var center = [item.x_point , item.y_point]
             getPoint(center,car_id);
             currentIndex++;  // 다음 인덱스로 이동
-        }, 100);
+        //}, 100);
     });
 };
 

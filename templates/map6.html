@@ -37,6 +37,9 @@
             <button id="dataset1" style="width:100px;height:50px;">Data Record</button>
             <button id="dataset2" style="width:100px;height:50px;">Data Reset</button>
             <br><br>
+            <button id="map1" style="width:100px;height:50px;">MapType1</button>
+            <button id="map2" style="width:100px;height:50px;">MapType2</button>
+            <br><br>
         </div>
         <div class="right-section">
             <div id="map" style="width: 100%; height: 730px; left: 0px; top: 0px"></div>
@@ -217,6 +220,54 @@ $("#dataset2").click(function() {
         }
     });
 });
+
+$("#map1").click(function() {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('static', filename='map_data.geojson') }}",
+        dataType: 'json',
+        success: function(response){
+            var format = new ol.format.GeoJSON();
+            var features = format.readFeatures(response, {
+            dataProjection: 'EPSG:4326',
+            featureProjection: 'EPSG:3857'
+            });
+        // 지도 위에 도로 벡터 저장소
+            vectorSource.clear();
+            finalSource.clear();
+            finalNewSource.clear();
+            NewSource.clear();
+            finalLineSource.clear();
+            vectorSource.addFeatures(features);
+            map.getView().setCenter([14141717.242680727,4509815.091367054]);
+            map.getView().setZoom(13);
+        }
+    });
+});
+$("#map2").click(function() {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('static', filename='map_data2.geojson') }}",
+        dataType: 'json',
+        success: function(response){
+            var format = new ol.format.GeoJSON();
+            var features = format.readFeatures(response, {
+            dataProjection: 'EPSG:4326',
+            featureProjection: 'EPSG:3857'
+            });
+        // 지도 위에 도로 벡터 저장소
+            vectorSource.clear();
+            finalSource.clear();
+            finalNewSource.clear();
+            NewSource.clear();
+            finalLineSource.clear();
+            vectorSource.addFeatures(features);
+            map.getView().setCenter([14152657.539987031,4522267.839452118]);
+            map.getView().setZoom(14);
+        }
+    });
+});
+
 
 if (!!window.EventSource) {
     var source = new EventSource('/events');

@@ -175,7 +175,7 @@ var finalStyle = new ol.style.Style({
 var finalLineStyle = new ol.style.Style({
     stroke: new ol.style.Stroke({
         color: 'green',
-        width: 20
+        width: 10
     })
 });
 
@@ -210,9 +210,6 @@ function dataset(coordinate,car_cnt) {
             var car_id = item.car_id;
             var xy_date = item.xydate;
             var center = [item.x_point , item.y_point]
-            if(marker[item.car_id]){
-                marker[item.car_id].setPosition(center);
-            }
             getPoint(center,car_id);
             currentIndex++;  // 다음 인덱스로 이동
         }, 100);
@@ -240,6 +237,11 @@ function getPoint(center,car_id){
     var nearestLine = findNearestLineFeature(center,car_id);
     if (nearestLine) {
         var footPoint = getfootPoint(nearestLine,center);
+
+        if(marker[car_id]){
+            marker[car_id].setPosition(footPoint);
+        }
+
         console.log(first_flag[car_id]);
         if(first_flag[car_id]){
             var lineGeom = new ol.geom.LineString([preCoord[car_id] , footPoint]);

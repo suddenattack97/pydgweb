@@ -112,6 +112,32 @@
         target: 'map',
         view: olView
     });
+
+    
+
+    /*
+    var wms_title = '연속지적도';
+    var wms_val = 'lp_pa_cbnd_bubun';
+ 
+    var wms_tile = new ol.layer.Tile({
+        name : "WMS_LAYER",
+        source : new ol.source.TileWMS({
+            url : "http://api.vworld.kr/req/wms?",
+            params : {
+                LAYERS : wms_val,
+                STYLES : wms_val,
+                CRS : "EPSG:900913",
+                apikey : "F6342F62-1FE6-3AE7-A404-6B9E0583385C",
+                DOMAIN : "http://loacalhost:4444",
+                title : wms_title,
+                FORMAT : "image/png",
+                domain : "http://localhost"
+            }
+        })
+    });
+    map.addLayer(wms_tile);
+    */
+    
     $.ajax({
         type: "GET",
         url: "{{ url_for('static', filename='level_13.geojson') }}",

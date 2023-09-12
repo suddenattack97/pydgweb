@@ -162,6 +162,47 @@
         }
     });
     $("#dataset1").click(function() {
+var data_record = 0;
+
+map.on("click", function(evt) {
+    if(data_record == 1){
+        // 지도 클릭 이벤트 리스너 추가
+        var coordinate = evt.coordinate;
+        var car_id = $("#car_id").val();
+        console.log('Clicked Coordinate:', coordinate);
+        // AJAX를 사용하여 서버에 좌표 전송
+        
+        $.ajax({
+            type: "POST",
+            url: "/save-coordinate",  // 예: "https://yourserver.com/save-coordinate"
+            data: {
+                car_id : car_id,
+                x: coordinate[0],
+                y: coordinate[1]
+            },
+            success: function(response) {
+                console.log('Coordinate saved successfully:', response);
+            },
+            error: function(error) {
+                console.error('Error saving coordinate:', error);
+            }
+        });
+    }
+});
+
+$("#dataset1").click(function() {
+    if(data_record == 0) {
+        data_record = 1;
+        $("#dataset1").text("Recording");
+        $("#dataset1").css('background','red');
+        $("#dataset1").css('color','white');
+    }else{
+        data_record = 0;
+        $("#dataset1").text("Data Record");
+        $("#dataset1").css('background-color','buttonface');
+        $("#dataset1").css('color','buttontext');
+    }
+});
     $.ajax({
         type: "POST",
         url: '/dataset1',

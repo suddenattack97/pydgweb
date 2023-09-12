@@ -117,6 +117,10 @@
     map.on('moveend', function() {
         var currentExtent = map.getView().calculateExtent(map.getSize());
         vectorLayer.setExtent(currentExtent);
+        finalLayer.setExtent(currentExtent);
+        finalNewLayer.setExtent(currentExtent);
+        NewLayer.setExtent(currentExtent);
+        finalLineLayer.setExtent(currentExtent);
     });
 
     /*

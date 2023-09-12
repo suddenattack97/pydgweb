@@ -64,7 +64,7 @@ def sse():
             
             cursor.close()
             cnx.close()
-            time.sleep(1)  # 1초 간격으로 데이터베이스 조회
+            time.sleep(3)  # 1초 간격으로 데이터베이스 조회
 
     return Response(event_stream(), mimetype="text/event-stream")
 

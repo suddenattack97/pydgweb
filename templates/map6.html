@@ -352,13 +352,13 @@ function dataset(coordinate) {
             map.addOverlay(marker[item.car_id]);	
         }
 
-        //setTimeout(function() {
+        setTimeout(function() {
             var car_id = item.car_id;
             var xy_date = item.xydate;
             var center = [item.x_point , item.y_point]
             getPoint(center,car_id);
             currentIndex++;  // 다음 인덱스로 이동
-        //}, 100);
+        }, 100);
     });
 };
 

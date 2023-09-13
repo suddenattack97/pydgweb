@@ -222,6 +222,11 @@ $("#dataset2").click(function() {
 });
 
 $("#map1").click(function() {
+    $(".ol-overlaycontainer").css('background-color','rgba(0, 0, 0, 0.8)');
+    $(".ol-overlaycontainer").css('background-image','url({{ url_for("static", filename="lo.gif") }})');
+    $(".ol-overlaycontainer").css('background-repeat','no-repeat');
+    $(".ol-overlaycontainer").css('background-position','center center');
+
     $.ajax({
         type: "GET",
         url: "{{ url_for('static', filename='map_data.geojson') }}",
@@ -243,10 +248,19 @@ $("#map1").click(function() {
             map.getView().setZoom(13);
 
             sse();
+        },complete : function(){
+            $(".ol-overlaycontainer").css('background-color','');
+            $(".ol-overlaycontainer").css('background-image','');
+            $(".ol-overlaycontainer").css('background-repeat','no-repeat');
+            $(".ol-overlaycontainer").css('background-position','center center');
         }
     });
 });
 $("#map2").click(function() {
+    $(".ol-overlaycontainer").css('background-color','rgba(0, 0, 0, 0.8)');
+    $(".ol-overlaycontainer").css('background-image','url({{ url_for("static", filename="lo.gif") }})');
+    $(".ol-overlaycontainer").css('background-repeat','no-repeat');
+    $(".ol-overlaycontainer").css('background-position','center center');
     $.ajax({
         type: "GET",
         url: "{{ url_for('static', filename='map_data2.geojson') }}",
@@ -266,6 +280,11 @@ $("#map2").click(function() {
             vectorSource.addFeatures(features);
             map.getView().setCenter([14152657.539987031,4522267.839452118]);
             map.getView().setZoom(14);
+        },complete : function(){
+            $(".ol-overlaycontainer").css('background-color','');
+            $(".ol-overlaycontainer").css('background-image','');
+            $(".ol-overlaycontainer").css('background-repeat','no-repeat');
+            $(".ol-overlaycontainer").css('background-position','center center');
         }
     });
 });

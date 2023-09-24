@@ -49,6 +49,20 @@
     <div id="marker" style="width: 20px; height: 20px; background-color: red;"></div>
 <script type="text/javascript">
 
+    var style = [
+        new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'white',
+                width: 10
+            })
+        }),
+        new ol.style.Style({
+            stroke: new ol.style.Stroke({
+            color: 'rgba(136, 247, 95, 1)',
+            width: 6
+            })
+        })
+    ];
     var vectorSource = new ol.source.Vector();
     var finalSource = new ol.source.Vector();
     var finalNewSource = new ol.source.Vector();
@@ -58,12 +72,7 @@
     // 지도 위에 도로 벡터 저장소
     var vectorLayer = new ol.layer.Vector({
         source: vectorSource,
-        style : new ol.style.Style({
-          stroke: new ol.style.Stroke({
-                  color: 'blue',
-                  width: 5
-              })
-          })
+        style : style
       });
       var finalLayer = new ol.layer.Vector({
         source: finalSource,

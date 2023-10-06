@@ -34,6 +34,15 @@ def map5():
 @app.route('/map6')
 def map6():
     return render_template('map6.html')
+@app.route('/map_request')
+
+def map_request():
+    return render_template('map_request.html')
+@app.route('/map_response')
+def map_response():
+    return render_template('map_response.html')
+
+
 @app.route('/events')
 def sse():
     def event_stream():

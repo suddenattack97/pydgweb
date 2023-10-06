@@ -334,110 +334,59 @@ var loading_flag = 0;
 var groupedCoordinates = {};
 
 function dataset(coordinate,dataType) {
-    //if(loading_flag == 0) {
-         // coordinate 배열을 순회하며 car_id 별로 좌표를 그룹화합니다.
-        for (var i = 0; i < coordinate.length; i++) {
-            var carId = coordinate[i]['car_id'];
-            var point = [coordinate[i]['x_point'], coordinate[i]['y_point']];
-        
-            // 해당 car_id의 배열이 없으면 새로 생성합니다.
-            if (!groupedCoordinates[carId]) {
-                groupedCoordinates[carId] = [];
-            }
-        
-            // 해당 car_id의 배열에 좌표를 추가합니다.
-            groupedCoordinates[carId].push(point);
-        }
-        
-        // 각 car_id 별로 좌표를 순회하며 선을 그립니다.
-        for (var carId in groupedCoordinates) {
-            if(!marker[carId]){
-                var marker_content= document.createElement("div"); // 오버레이 팝업설정 
-                marker_content.innerHTML+="<div id='truck' style='margin-top:-30px; margin-left: -30px;' class=''>\n\
-                <img style='-webkit-user-drag: none; width:52px !important; height:52px !important;' src='{{ url_for('static', filename='truck.png') }}'/></div>";
+    // coordinate 배열을 순회하며 car_id 별로 좌표를 그룹화합니다.
+    for (var i = 0; i < coordinate.length; i++) {
+        var carId = coordinate[i]['car_id'];
+        var point = [coordinate[i]['x_point'], coordinate[i]['y_point']];
     
-                marker[carId] = new ol.Overlay({
-                    id:carId,
-                    element:marker_content,
-                    stopEvent : false,
-                    dragging: true
-                });
-                map.addOverlay(marker[carId]);	
-            }
-
-            var carCoordinates = groupedCoordinates[carId];
-            
-            for (var i = 0; i < carCoordinates.length - 1; i++) {
-                var lineCoordinates = carCoordinates[i];
-                var lineCoordinates2 = carCoordinates[i + 1];
-                
-                var lineGeom = new ol.geom.LineString([lineCoordinates, lineCoordinates2]);
-                var lineFeature = new ol.Feature({
-                    geometry: lineGeom
-                });
-                lineFeature.setStyle(finalLineStyle);  // 스타일 적용
-                finalLineSource.addFeature(lineFeature);
-            }
-            
-            if(marker[carId]){
-                marker[carId].setPosition(groupedCoordinates[carId][groupedCoordinates[carId].length-1]);
-            }   
+        // 해당 car_id의 배열이 없으면 새로 생성합니다.
+        if (!groupedCoordinates[carId]) {
+            groupedCoordinates[carId] = [];
         }
-        loading_flag = 1;
-    //}else{
-    //    var currentIndex = 0;
-    //    coordinate.forEach(function(item){
-    //        //setTimeout(function() {
-    //            var car_id = item.car_id;
-    //            var xy_date = item.xydate;
-    //            var center = [item.x_point , item.y_point]
-    //            getPoint(center,car_id);
-    //            currentIndex++;  // 다음 인덱스로 이동
-    //        //}, 100);
-    //    });
-    //}
+    
+        // 해당 car_id의 배열에 좌표를 추가합니다.
+        groupedCoordinates[carId].push(point);
+    }
+    console.log(groupedCoordinates);
+    // 각 car_id 별로 좌표를 순회하며 선을 그립니다.
+    for (var carId in groupedCoordinates) {
+        if(!marker[carId]){
+            var marker_content= document.createElement("div"); // 오버레이 팝업설정 
+            marker_content.innerHTML+="<div id='truck' style='margin-top:-30px; margin-left: -30px;' class=''>\n\
+            <img style='-webkit-user-drag: none; width:52px !important; height:52px !important;' src='{{ url_for('static', filename='truck.png') }}'/></div>";
+
+            marker[carId] = new ol.Overlay({
+                id:carId,
+                element:marker_content,
+                stopEvent : false,
+                dragging: true
+            });
+            map.addOverlay(marker[carId]);	
+        }
+
+        var carCoordinates = groupedCoordinates[carId];
+        for (var i = 0; i < carCoordinates.length - 1; i++) {
+            var lineCoordinates = carCoordinates[i];
+            var lineCoordinates2 = carCoordinates[i + 1];
+            
+            var lineGeom = new ol.geom.LineString([lineCoordinates, lineCoordinates2]);
+            var lineFeature = new ol.Feature({
+                geometry: lineGeom
+            });
+            lineFeature.setStyle(finalLineStyle);  // 스타일 적용
+            finalLineSource.addFeature(lineFeature);
+        }
+            
+        if(marker[carId]){
+            marker[carId].setPosition(groupedCoordinates[carId][groupedCoordinates[carId].length-1]);
+        }   
+    }
 };
 
 function getPoint(center,car_id){
-        //if(first_flag[car_id]){
-        //   /// ###############################   맨 앞 점과 잘라진 점을 이어붙인다.
-        //   var lineGeom = new ol.geom.LineString([preCoord[car_id] , groupedCoordinates[car_id][0]]);
-        //   var lineGeom2 = new ol.geom.LineString([preCoord[car_id] , groupedCoordinates[car_id][groupedCoordinates[car_id].length-1]]);
-//
-        //   var lineFeature = new ol.Feature({
-        //       geometry: lineGeom
-        //   });
-        //   var lineFeature2 = new ol.Feature({
-        //       geometry: lineGeom2
-        //   });
-        //   lineFeature.setStyle(finalLineStyle);  // 스타일 적용
-        //   lineFeature2.setStyle(finalLineStyle);  // 스타일 적용
-        //   finalLineSource.addFeature(lineFeature);
-        //   finalLineSource.addFeature(lineFeature2);
-        //   //// ###############################   맨 끝 점과 잘라진 점을 이어붙인다.
-//
-        if(marker[car_id]){
-            marker[car_id].setPosition(center);
-        }   
-        //   var lineGeom = new ol.geom.LineString([preCoord[car_id] , center]);
-        //   var lineFeature = new ol.Feature({
-        //       geometry: lineGeom
-        //   });
-        //   lineFeature.setStyle(finalLineStyle);  // 스타일 적용
-        //   finalLineSource.addFeature(lineFeature);
-//
-        //    preCoord[car_id] = center;
-        //}else{
-        //    preCoord[car_id] = center;
-        //    first_flag[car_id] = true
-        //}
-       //var lineGeom = new ol.geom.LineString([groupedCoordinates[car_id][groupedCoordinates[car_id].length-1] , center]);
-       //var lineFeature = new ol.Feature({
-       //    geometry: lineGeom
-       //});
-       //lineFeature.setStyle(finalLineStyle);  // 스타일 적용
-       //finalLineSource.addFeature(lineFeature);
-
+    if(marker[car_id]){
+        marker[car_id].setPosition(center);
+    }   
 };
 
 function getDistance(point1, point2) {

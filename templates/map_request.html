@@ -123,7 +123,8 @@
     var map = new ol.Map({
         layers: [Base,vectorLayer, finalLayer , finalNewLayer , NewLayer , finalLineLayer],
         target: 'map',
-        view: olView
+        view: olView,
+        renderer: 'webgl'
     });
     map.getView().setMinZoom(12.7);
     map.getView().setMaxZoom(18);

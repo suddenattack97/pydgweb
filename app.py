@@ -69,7 +69,10 @@ def sse():
             if rows:
                 last_id = rows[-1][0]
                 coordinates = [{"idx": row[0], "xy_date": row[1], "car_id": row[2], "x_point": row[3], "y_point": row[4]} for row in rows]
-                yield f"data: {json.dumps(coordinates)}\n\n"
+                data = {
+                    "coordinates": coordinates,
+                }
+                yield f"data: {json.dumps(data)}\n\n"
             
             cursor.close()
             cnx.close()

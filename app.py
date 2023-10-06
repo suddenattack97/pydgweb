@@ -80,37 +80,6 @@ def sse():
 
     return Response(event_stream(), mimetype="text/event-stream")
 
-@app.route('/dataset1', methods=['POST'])
-def dataset1():
-    cnx = pymysql.connect(
-        host="localhost",  # 예: "localhost"
-        user="root",  # 예: "root"
-        password="2412",  # 예: "yourpassword"
-        database="road"  # 연결하려는 데이터베이스 이름. 예: "yourdatabase"
-    )
-    cursor = cnx.cursor()
-    try:
-        # 좌표를 데이터베이스에 저장
-        query = "SELECT * from dataset_1"
-        cursor.execute(query)
-        # 모든 결과 행 가져오기
-        rows = cursor.fetchall()
-        
-        # 결과를 딕셔너리 리스트로 변환
-        coordinates = [{"idx": row[0], "xy_date": row[1],"car_id": row[2], "x_point": row[3], "y_point": row[4]} for row in rows]
-        
-        query = "SELECT COUNT(DISTINCT car_id) from dataset"
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        car_cnt = [{"cnt": row[0] } for row in rows ]
-        
-        return jsonify({"status": "success", "coordinates": coordinates , "car_cnt" : car_cnt}), 200
-    except Exception as e:
-        print("General error:", e)
-        return jsonify({"status": "error", "message": "General error: {}".format(e)}), 500
-    finally:
-        cursor.close()
-        cnx.close()
 
 @app.route('/data_reset', methods=['POST'])
 def data_reset():
@@ -133,10 +102,6 @@ def data_reset():
     finally:
         cursor.close()
         cnx.close()
-        
-        
-@app.route('/dataset3', methods=['POST'])
-def dataset3():
 
 
 @app.route('/save-coordinate', methods=['POST'])
@@ -154,15 +119,40 @@ def save_coordinate():
     cursor = cnx.cursor()
     try:
         # 좌표를 데이터베이스에 저장
-        query = "SELECT * from dataset_3"
-        cursor.execute(query)
-        # 모든 결과 행 가져오기
-        rows = cursor.fetchall()
-        
-        # 결과를 딕셔너리 리스트로 변환
-        coordinates = [{"idx": row[0], "x_point": row[1], "y_point": row[2]} for row in rows]
-        
-        return jsonify({"status": "success", "coordinates": coordinates}), 200
+        query = "INSERT INTO dataset (xy_date, car_id, x_point, y_point) VALUES (now(), %s, %s, %s)"
+        cursor.execute(query, (car_id, x, y))
+        cnx.commit()
+        return jsonify({"status": "success", "message": "Coordinate saved successfully"}), 200
+    except Exception as e:
+        print("General error:", e)
+        return jsonify({"status": "error", "message": "General error: {}".format(e)}), 500
+    finally:
+        cursor.close()
+        cnx.close()
+    # # MySQL 쿼리를 실행하여 road_data 테이블 업데이트
+    # insert_query = "INSERT INTO dataset (x_point, y_point) VALUES (%s, %s)"
+    # print((x, y))
+    # cursor.execute(insert_query, (x, y))
+
+    # # 변경사항을 커밋
+    # cnx.commit()
+
+    # # 커서와 연결을 닫음
+    # cursor.close()
+    # cnx.close()
+    car_id = request.form['car_id']
+    x = request.form['x']
+    y = request.form['y']
+
+    cnx = pymysql.connect(
+        host="localhost",  # 예: "localhost"
+        user="root",  # 예: "root"
+        password="2412",  # 예: "yourpassword"
+        database="road"  # 연결하려는 데이터베이스 이름. 예: "yourdatabase"
+    )
+    cursor = cnx.cursor()
+    try:
+        # 좌표를 데이터베이스에 저장
     except Exception as e:
         print("General error:", e)
         return jsonify({"status": "error", "message": "General error: {}".format(e)}), 500

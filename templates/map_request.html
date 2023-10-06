@@ -275,24 +275,7 @@ function dataset(coordinate) {
         var car_id = item.car_id;
         var xy_date = item.xydate;
         var center = [item.x_point , item.y_point]
-
-        $.ajax({
-            type: "POST",
-            url: "/getoriPoint",  // 예: "https://yourserver.com/save-coordinate"
-            data: {
-                car_id : car_id,
-                x : center[0],
-                y : center[1]
-            },
-            success: function(response) {
-                console.log('Coordinate saved successfully:', response);
-            },
-            error: function(error) {
-                console.error('Error saving coordinate:', error);
-            }
-        });
-
-        getPoint(center,car_id);
+        getPoint(center, car_id)
         currentIndex++;  // 다음 인덱스로 이동
 
 

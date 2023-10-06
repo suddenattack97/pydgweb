@@ -49,9 +49,9 @@ def sse():
 
             # 마지막 ID 이후의 새로운 데이터를 가져오기
             if last_id:
-                query = f"SELECT * from dataset WHERE idx > {last_id} ORDER BY idx ASC"
+                query = f"SELECT * from dataset_row WHERE idx > {last_id} ORDER BY idx ASC"
             else:
-                query = "SELECT * from dataset ORDER BY idx ASC"
+                query = "SELECT * from dataset_row ORDER BY idx ASC"
             
             cursor.execute(query)
             rows = cursor.fetchall()

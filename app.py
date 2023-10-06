@@ -175,11 +175,17 @@ def save_coordinate():
     )
     cursor = cnx.cursor()
 
-    try:
+    try:    
+        for points in footPoint: 
+            query = "INSERT INTO dataset_row (xy_date, car_id, x_point, y_point) VALUES (now(), %s, %s, %s)"
+            cursor.execute(query, (car_id, points[0], points[1]))
+            cnx.commit()
+            
         # 좌표를 데이터베이스에 저장
-        query = "INSERT INTO dataset (xy_date, car_id, x_point, y_point) VALUES (now(), %s, %s, %s)"
-        cursor.execute(query, (car_id, x, y))
+        query = "UPDATE dataset SET footpoint = 1 WHERE car_id = %s AND x_point = %s AND y_point = %s "
+        cursor.execute(query, (car_id, ori_x, ori_y))
         cnx.commit()
+        
         return jsonify({"status": "success", "message": "Coordinate saved successfully"}), 200
     except Exception as e:
         print("General error:", e)

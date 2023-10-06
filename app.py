@@ -137,6 +137,14 @@ def data_reset():
         
 @app.route('/dataset3', methods=['POST'])
 def dataset3():
+
+
+@app.route('/save-coordinate', methods=['POST'])
+def save_coordinate():
+    car_id = request.form['car_id']
+    x = request.form['x']
+    y = request.form['y']
+
     cnx = pymysql.connect(
         host="localhost",  # 예: "localhost"
         user="root",  # 예: "root"

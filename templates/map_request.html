@@ -278,16 +278,16 @@ function dataset(coordinate) {
         getPoint(center, car_id)
         currentIndex++;  // 다음 인덱스로 이동
 
-
-        var row_data = newPoint[car_id];
         $.ajax({
             type: "POST",
             async: false,
             url: "/getfootPoint",  // 예: "https://yourserver.com/save-coordinate"
             contentType: 'application/json;charset=UTF-8',
             data: JSON.stringify({  // 데이터를 JSON 문자열로 변환
-                car_id : car_id,
-                footPoint : row_data
+                car_id : car_id ,
+                footPoint : newPoint[car_id],
+                ori_x : center[0],
+                ori_y : center[1]
             }),
             success: function(response) {
                 console.log('Coordinate saved successfully:', response);

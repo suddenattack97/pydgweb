@@ -369,9 +369,6 @@ async function getPoint(center, car_id) {
             resolve();  // 작업이 성공적으로 완료되면 resolve를 호출합니다.
         } catch (error) {
             reject(error);  // 작업 중 오류가 발생하면 reject를 호출하여 오류를 반환합니다.
-        } finally {
-            console.log("@");
-            // 예외 발생과 관계 없이 항상 실행되는 코드 (선택적)
         }
     });
 };

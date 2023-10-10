@@ -169,34 +169,6 @@ map.on("click", function(evt) {
     }
 });
 
-$("#dataset1").click(function() {
-    if(data_record == 0) {
-        data_record = 1;
-        $("#dataset1").text("Recording");
-        $("#dataset1").css('background','red');
-        $("#dataset1").css('color','white');
-    }else{
-        data_record = 0;
-        $("#dataset1").text("Data Record");
-        $("#dataset1").css('background-color','buttonface');
-        $("#dataset1").css('color','buttontext');
-    }
-});
-
-$("#dataset2").click(function() {
-    $.ajax({
-        type: "POST",
-        url: '/data_reset',
-        data: {},
-        success: function(response) {
-            location.reload();
-        },
-        error: function(error) {
-            console.error('Error loading dataset:', error);
-        }
-    });
-});
-
 $.ajax({
     type: "GET",
     url: "{{ url_for('static', filename='map_data3.geojson') }}",

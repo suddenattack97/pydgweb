@@ -384,13 +384,6 @@ function dataset(coordinate,dataType) {
 };
 
 
-function getDistance(point1, point2) {
-    let dx = point2[0] - point1[0];
-    let dy = point2[1] - point1[1];
-    
-    return Math.sqrt(dx * dx + dy * dy);
-}
-
 function getMidpointOfLine(lineString) {
     const coordinates = lineString.getGeometry().getCoordinates();
     const start = coordinates[0];

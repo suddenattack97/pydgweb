@@ -69,7 +69,8 @@
     // 지도 위에 도로 벡터 저장소
     var vectorLayer = new ol.layer.Vector({
         source: vectorSource,
-        style : style
+        style : style,
+        renderMode: 'webgl'
       });
       var finalLayer = new ol.layer.Vector({
         source: finalSource,
@@ -78,7 +79,8 @@
                   color: 'red',
                   width: 10
               })
-          })
+          }),
+          renderMode: 'webgl'
       });
       var finalNewLayer = new ol.layer.Vector({
         source: finalNewSource,
@@ -87,7 +89,8 @@
                   color: 'red',
                   width: 10
               })
-          })
+          }),
+          renderMode: 'webgl'
       });
       var NewLayer = new ol.layer.Vector({
         source: NewSource,
@@ -96,7 +99,8 @@
                   color: 'red',
                   width: 10
               })
-          })
+          }),
+          renderMode: 'webgl'
       });
       var finalLineLayer = new ol.layer.Vector({
           source: finalLineSource,
@@ -105,7 +109,8 @@
                     color: 'rgba(221, 153, 250, 1)',
                     width: 30
                 })
-            })
+            }),
+            renderMode: 'webgl'
         });
 
     var Base = new ol.layer.Tile({
